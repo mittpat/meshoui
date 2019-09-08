@@ -9,7 +9,10 @@ set(shaders dome.glsl phong.glsl)
 set_source_files_properties(${shaders} PROPERTIES HEADER_FILE_ONLY TRUE)
 add_executable(meshouiview
     main.cpp
-    phong.h phong.cpp
+    mo_buffer.cpp  mo_material.cpp        mo_mesh.cpp        mo_pipeline.cpp
+    mo_buffer.h    mo_material.h          mo_mesh.h          mo_pipeline.h
+    mo_device.cpp  mo_material_utils.cpp  mo_mesh_utils.cpp  mo_swapchain.cpp
+    mo_device.h    mo_material_utils.h    mo_mesh_utils.h    mo_swapchain.h
     ${shaders})
 
 if(NOT MSVC)

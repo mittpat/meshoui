@@ -6,7 +6,12 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "phong.h"
+#include "mo_device.h"
+#include "mo_material.h"
+#include "mo_mesh.h"
+#include "mo_mesh_utils.h"
+#include "mo_pipeline.h"
+#include "mo_swapchain.h"
 
 #include <linalg.h>
 
@@ -363,7 +368,6 @@ int main(int argc, char** argv)
 
         glfwSetErrorCallback(glfw_error_callback);
         glfwInit();
-#undef NDEBUG
 #ifndef NDEBUG
         width = 1920 / 2;
         height = 1080 / 2;
@@ -450,7 +454,6 @@ int main(int argc, char** argv)
         initInfo.device = device->device;
         initInfo.queueFamily = device->queueFamily;
         initInfo.queue = device->queue;
-        initInfo.pipelineCache = pipelineCache;
         initInfo.descriptorPool = device->descriptorPool;
         initInfo.pSwapChainSwapBuffers = swapChain->images;
         initInfo.swapChainSwapBufferCount = MO_FRAME_COUNT;
@@ -460,7 +463,6 @@ int main(int argc, char** argv)
         initInfo.swapChainKHR = swapChain->swapChainKHR;
         initInfo.renderPass = swapChain->renderPass;
         initInfo.extent = swapChain->extent;
-        initInfo.pAllocator = allocator;
         initInfo.pCheckVkResultFn = device->pCheckVkResultFn;
         moInit(&initInfo);
     }
