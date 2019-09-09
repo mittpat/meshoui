@@ -24,7 +24,7 @@ endif()
 add_custom_command(TARGET meshouiview POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
                        ${CMAKE_CURRENT_SOURCE_DIR}/teapot.dae
-                       $<TARGET_FILE_DIR:meshouiview>/teapot.dae)
+                       $<TARGET_FILE_DIR:meshouiview>/)
 
 set(glslang_output_dir ${CMAKE_CURRENT_SOURCE_DIR}/cache)
 compile_glsl(spirv ${shaders})

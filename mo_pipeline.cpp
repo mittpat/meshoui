@@ -23,6 +23,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
     VkShaderModule vert_module;
     VkShaderModule frag_module;
 
+    // program bindings
     {
         VkShaderModuleCreateInfo vert_info = {};
         vert_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -38,16 +39,14 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
         g_Device->pCheckVkResultFn(err);
     }
 
+    // uniform bindings
     {
-        VkDescriptorSetLayoutBinding binding[2];
+        VkDescriptorSetLayoutBinding binding[1];
+        // view position, light position
         binding[0].binding = 0;
         binding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         binding[0].descriptorCount = 1;
-        binding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
-        binding[1].binding = 1;
-        binding[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        binding[1].descriptorCount = 1;
-        binding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
+        binding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -57,6 +56,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
         g_Device->pCheckVkResultFn(err);
     }
 
+    // material bindings
     {
         VkDescriptorSetLayoutBinding binding[5];
         for (uint32_t i = 0; i < 5; ++i)
@@ -106,7 +106,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
         descriptorWrite[0].descriptorCount = 1;
         descriptorWrite[0].pBufferInfo = &bufferInfo[0];
 
-        vkUpdateDescriptorSets(g_Device->device, 1, descriptorWrite, 0, nullptr);
+        vkUpdateDescriptorSets(g_Device->device, 1, descriptorWrite, 0, VK_NULL_HANDLE);
     }
 
     {
@@ -231,18 +231,18 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
     err = vkCreateGraphicsPipelines(g_Device->device, VK_NULL_HANDLE, 1, &info, VK_NULL_HANDLE, &pipeline->pipeline);
     g_Device->pCheckVkResultFn(err);
 
-    vkDestroyShaderModule(g_Device->device, frag_module, nullptr);
-    vkDestroyShaderModule(g_Device->device, vert_module, nullptr);
+    vkDestroyShaderModule(g_Device->device, frag_module, VK_NULL_HANDLE);
+    vkDestroyShaderModule(g_Device->device, vert_module, VK_NULL_HANDLE);
 }
 
 void moDestroyPipeline(MoPipeline pipeline)
 {
     vkQueueWaitIdle(g_Device->queue);
     for (size_t i = 0; i < MO_FRAME_COUNT; ++i) { moDeleteBuffer(g_Device, pipeline->uniformBuffer[i]); }
-    vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT], nullptr);
-    vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT], nullptr);
-    vkDestroyPipelineLayout(g_Device->device, pipeline->pipelineLayout, nullptr);
-    vkDestroyPipeline(g_Device->device, pipeline->pipeline, nullptr);
+    vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT], VK_NULL_HANDLE);
+    vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT], VK_NULL_HANDLE);
+    vkDestroyPipelineLayout(g_Device->device, pipeline->pipelineLayout, VK_NULL_HANDLE);
+    vkDestroyPipeline(g_Device->device, pipeline->pipeline, VK_NULL_HANDLE);
     pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT] = VK_NULL_HANDLE;
     pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT] = VK_NULL_HANDLE;
     pipeline->pipelineLayout = VK_NULL_HANDLE;
@@ -257,7 +257,7 @@ void moBegin(uint32_t frameIndex)
     g_FrameIndex = frameIndex;
     auto & frame = g_SwapChain->frames[g_FrameIndex];
     vkCmdBindPipeline(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipeline);
-    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipelineLayout, 0, 1, &g_Pipeline->descriptorSet[g_FrameIndex], 0, nullptr);
+    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipelineLayout, 0, 1, &g_Pipeline->descriptorSet[g_FrameIndex], 0, VK_NULL_HANDLE);
 }
 
 void moPipelineOverride(MoPipeline pipeline)

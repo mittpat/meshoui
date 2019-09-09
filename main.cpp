@@ -357,8 +357,6 @@ int main(int argc, char** argv)
     VkSurfaceKHR                 surface = VK_NULL_HANDLE;
     VkSurfaceFormatKHR           surfaceFormat = {};
     uint32_t                     frameIndex = 0;
-    VkPipelineCache              pipelineCache = VK_NULL_HANDLE;
-    const VkAllocationCallbacks* allocator = VK_NULL_HANDLE;
 
     MoInputs                     inputs = {};
 
@@ -404,7 +402,7 @@ int main(int argc, char** argv)
         }
 
         // Create Window Surface
-        VkResult err = glfwCreateWindowSurface(instance, window, allocator, &surface);
+        VkResult err = glfwCreateWindowSurface(instance, window, VK_NULL_HANDLE, &surface);
         vk_check_result(err);
 
         // Create Framebuffers
@@ -440,7 +438,6 @@ int main(int argc, char** argv)
             createInfo.surfaceFormat = surfaceFormat;
             createInfo.extent = {(uint32_t)width, (uint32_t)height};
             createInfo.vsync = VK_TRUE;
-            createInfo.pAllocator = allocator;
             createInfo.pCheckVkResultFn = vk_check_result;
             moCreateSwapChain(&createInfo, &swapChain);
         }
@@ -627,7 +624,7 @@ int main(int argc, char** argv)
     // Cleanup
     moShutdown();
     moDestroySwapChain(device, swapChain);
-    vkDestroySurfaceKHR(instance, surface, allocator);
+    vkDestroySurfaceKHR(instance, surface, VK_NULL_HANDLE);
     moDestroyDevice(device);
     moDestroyInstance(instance);
 

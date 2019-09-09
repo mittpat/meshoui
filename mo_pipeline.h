@@ -7,12 +7,13 @@
 #define MO_FRAME_COUNT 2
 #define MO_PROGRAM_DESC_LAYOUT 0
 #define MO_MATERIAL_DESC_LAYOUT 1
+#define MO_COUNT_DESC_LAYOUT MO_MATERIAL_DESC_LAYOUT+1
 
 typedef struct MoPipeline_T {
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
+    VkDescriptorSetLayout descriptorSetLayout[MO_COUNT_DESC_LAYOUT];
     // the buffers bound to this descriptor set may change frame to frame, one set per frame
-    VkDescriptorSetLayout descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT+1];
     VkDescriptorSet descriptorSet[MO_FRAME_COUNT];
     MoDeviceBuffer  uniformBuffer[MO_FRAME_COUNT];
 }* MoPipeline;

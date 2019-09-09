@@ -7,7 +7,6 @@ typedef struct MoInstanceCreateInfo {
     uint32_t                     extensionsCount;
     VkBool32                     debugReport;
     PFN_vkDebugReportCallbackEXT pDebugReportCallback;
-    const VkAllocationCallbacks* pAllocator;
     void                       (*pCheckVkResultFn)(VkResult err);
 } MoInstanceCreateInfo;
 

@@ -75,8 +75,8 @@ void moUploadBuffer(MoDevice device, MoDeviceBuffer deviceBuffer, VkDeviceSize d
 
 void moDeleteBuffer(MoDevice device, MoDeviceBuffer deviceBuffer)
 {
-    vkDestroyBuffer(device->device, deviceBuffer->buffer, nullptr);
-    vkFreeMemory(device->device, deviceBuffer->memory, nullptr);
+    vkDestroyBuffer(device->device, deviceBuffer->buffer, VK_NULL_HANDLE);
+    vkFreeMemory(device->device, deviceBuffer->memory, VK_NULL_HANDLE);
     delete deviceBuffer;
 }
 
@@ -148,7 +148,7 @@ void moTransferBuffer(VkCommandBuffer commandBuffer, MoDeviceBuffer fromBuffer, 
         copy_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         copy_barrier.subresourceRange.levelCount = 1;
         copy_barrier.subresourceRange.layerCount = 1;
-        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &copy_barrier);
+        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, 1, &copy_barrier);
     }
     {
         VkBufferImageCopy region = {};
@@ -170,15 +170,15 @@ void moTransferBuffer(VkCommandBuffer commandBuffer, MoDeviceBuffer fromBuffer, 
         use_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         use_barrier.subresourceRange.levelCount = 1;
         use_barrier.subresourceRange.layerCount = 1;
-        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &use_barrier);
+        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, 1, &use_barrier);
     }
 }
 
 void moDeleteBuffer(MoDevice device, MoImageBuffer imageBuffer)
 {
-    vkDestroyImageView(device->device, imageBuffer->view, nullptr);
-    vkDestroyImage(device->device, imageBuffer->image, nullptr);
-    vkFreeMemory(device->device, imageBuffer->memory, nullptr);
+    vkDestroyImageView(device->device, imageBuffer->view, VK_NULL_HANDLE);
+    vkDestroyImage(device->device, imageBuffer->image, VK_NULL_HANDLE);
+    vkFreeMemory(device->device, imageBuffer->memory, VK_NULL_HANDLE);
     delete imageBuffer;
 }
 
@@ -266,8 +266,8 @@ void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDes
             srcStageMask,
             dstStageMask,
             0,
-            0, nullptr,
-            0, nullptr,
+            0, VK_NULL_HANDLE,
+            0, VK_NULL_HANDLE,
             1, &imageMemoryBarrier);
     };
 
@@ -324,13 +324,13 @@ void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDes
         VkFenceCreateInfo fenceInfo = {};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         VkFence fence;
-        res = vkCreateFence(g_Device->device, &fenceInfo, nullptr, &fence);
+        res = vkCreateFence(g_Device->device, &fenceInfo, VK_NULL_HANDLE, &fence);
         g_Device->pCheckVkResultFn(err);
         res = vkQueueSubmit(g_Device->queue, 1, &submitInfo, fence);
         g_Device->pCheckVkResultFn(err);
         res = vkWaitForFences(g_Device->device, 1, &fence, VK_TRUE, UINT64_MAX);
         g_Device->pCheckVkResultFn(err);
-        vkDestroyFence(g_Device->device, fence, nullptr);
+        vkDestroyFence(g_Device->device, fence, VK_NULL_HANDLE);
     }
 
     // Get layout of the image (including row pitch)
@@ -350,13 +350,13 @@ void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDes
         pDestination[pixel + 0] = imageData[pixel + 0];
         pDestination[pixel + 1] = imageData[pixel + 1];
         pDestination[pixel + 2] = imageData[pixel + 2];
-        pDestination[pixel + 3] = 255; //imageData[pixel + 3];
+        pDestination[pixel + 3] = 255;
     }
 
     // Clean up resources
     vkUnmapMemory(g_Device->device, dstImageMemory);
-    vkFreeMemory(g_Device->device, dstImageMemory, nullptr);
-    vkDestroyImage(g_Device->device, dstImage, nullptr);
+    vkFreeMemory(g_Device->device, dstImageMemory, VK_NULL_HANDLE);
+    vkDestroyImage(g_Device->device, dstImage, VK_NULL_HANDLE);
 }
 
 /*

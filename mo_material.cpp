@@ -170,7 +170,7 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
             write_desc[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             write_desc[i].pImageInfo = &desc_image[i];
         }
-        vkUpdateDescriptorSets(g_Device->device, 5, write_desc, 0, nullptr);
+        vkUpdateDescriptorSets(g_Device->device, 5, write_desc, 0, VK_NULL_HANDLE);
     }
 }
 
@@ -183,18 +183,18 @@ void moDestroyMaterial(MoMaterial material)
     moDeleteBuffer(g_Device, material->specularImage);
     moDeleteBuffer(g_Device, material->emissiveImage);
 
-    vkDestroySampler(g_Device->device, material->ambientSampler, nullptr);
-    vkDestroySampler(g_Device->device, material->diffuseSampler, nullptr);
-    vkDestroySampler(g_Device->device, material->normalSampler, nullptr);
-    vkDestroySampler(g_Device->device, material->specularSampler, nullptr);
-    vkDestroySampler(g_Device->device, material->emissiveSampler, nullptr);
+    vkDestroySampler(g_Device->device, material->ambientSampler, VK_NULL_HANDLE);
+    vkDestroySampler(g_Device->device, material->diffuseSampler, VK_NULL_HANDLE);
+    vkDestroySampler(g_Device->device, material->normalSampler, VK_NULL_HANDLE);
+    vkDestroySampler(g_Device->device, material->specularSampler, VK_NULL_HANDLE);
+    vkDestroySampler(g_Device->device, material->emissiveSampler, VK_NULL_HANDLE);
     delete material;
 }
 
 void moBindMaterial(MoMaterial material)
 {
     auto & frame = g_SwapChain->frames[g_FrameIndex];
-    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipelineLayout, 1, 1, &material->descriptorSet, 0, VK_NULL_HANDLE);
 }
 
 /*

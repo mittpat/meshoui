@@ -54,7 +54,7 @@ void moCreateInstance(MoInstanceCreateInfo *pCreateInfo, VkInstance *pInstance)
             debug_report_ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
             debug_report_ci.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
             debug_report_ci.pfnCallback = pCreateInfo->pDebugReportCallback;
-            debug_report_ci.pUserData = nullptr;
+            debug_report_ci.pUserData = VK_NULL_HANDLE;
             err = vkCreateDebugReportCallbackEXT(*pInstance, &debug_report_ci, VK_NULL_HANDLE, &g_DebugReport);
             pCreateInfo->pCheckVkResultFn(err);
         }
@@ -71,11 +71,11 @@ void moDestroyInstance(VkInstance instance)
     if (g_DebugReport)
     {
         auto vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-        vkDestroyDebugReportCallbackEXT(instance, g_DebugReport, nullptr);
+        vkDestroyDebugReportCallbackEXT(instance, g_DebugReport, VK_NULL_HANDLE);
     }
     else
     {
-        vkDestroyInstance(instance, nullptr);
+        vkDestroyInstance(instance, VK_NULL_HANDLE);
     }
 }
 
@@ -129,7 +129,7 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
         create_info.enabledExtensionCount = device_extensions_count;
         create_info.ppEnabledExtensionNames = device_extensions;
         create_info.pEnabledFeatures = &deviceFeatures;
-        err = vkCreateDevice(device->physicalDevice, &create_info, nullptr, &device->device);
+        err = vkCreateDevice(device->physicalDevice, &create_info, VK_NULL_HANDLE, &device->device);
         pCreateInfo->pCheckVkResultFn(err);
         vkGetDeviceQueue(device->device, device->queueFamily, 0, &device->queue);
     }
@@ -155,7 +155,7 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
         pool_info.maxSets = 1000 * (uint32_t)countof(pool_sizes);
         pool_info.poolSizeCount = (uint32_t)countof(pool_sizes);
         pool_info.pPoolSizes = pool_sizes;
-        err = vkCreateDescriptorPool(device->device, &pool_info, nullptr, &device->descriptorPool);
+        err = vkCreateDescriptorPool(device->device, &pool_info, VK_NULL_HANDLE, &device->descriptorPool);
         pCreateInfo->pCheckVkResultFn(err);
     }
 
@@ -209,8 +209,8 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
 
 void moDestroyDevice(MoDevice device)
 {
-    vkDestroyDescriptorPool(device->device, device->descriptorPool, nullptr);
-    vkDestroyDevice(device->device, nullptr);
+    vkDestroyDescriptorPool(device->device, device->descriptorPool, VK_NULL_HANDLE);
+    vkDestroyDevice(device->device, VK_NULL_HANDLE);
     delete device;
 }
 

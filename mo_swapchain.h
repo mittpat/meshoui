@@ -16,7 +16,6 @@ typedef struct MoSwapChainCreateInfo {
     VkExtent2D                   extent;
     linalg::aliases::float4      clearColor;
     VkBool32                     vsync;
-    const VkAllocationCallbacks* pAllocator;
     void                       (*pCheckVkResultFn)(VkResult err);
 } MoSwapChainCreateInfo;
 

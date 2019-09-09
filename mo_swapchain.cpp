@@ -186,12 +186,12 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     moDeleteBuffer(g_Device, swapChain->depthBuffer);
     for (uint32_t i = 0; i < countof(swapChain->images); ++i)
     {
-        vkDestroyImageView(g_Device->device, swapChain->images[i].view, nullptr);
-        vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, nullptr);
+        vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
+        vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
     }
     if (swapChain->renderPass)
     {
-        vkDestroyRenderPass(g_Device->device, swapChain->renderPass, nullptr);
+        vkDestroyRenderPass(g_Device->device, swapChain->renderPass, VK_NULL_HANDLE);
     }
 
     {
@@ -225,7 +225,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         {
             info.imageExtent = swapChain->extent = cap.currentExtent;
         }
-        err = vkCreateSwapchainKHR(g_Device->device, &info, nullptr, &swapChain->swapChainKHR);
+        err = vkCreateSwapchainKHR(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->swapChainKHR);
         g_Device->pCheckVkResultFn(err);
         uint32_t backBufferCount = 0;
         err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, NULL);
@@ -241,7 +241,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     }
     if (old_swapchain)
     {
-        vkDestroySwapchainKHR(g_Device->device, old_swapchain, nullptr);
+        vkDestroySwapchainKHR(g_Device->device, old_swapchain, VK_NULL_HANDLE);
     }
 
     {
@@ -282,7 +282,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         info.pAttachments = attachment;
         info.subpassCount = 1;
         info.pSubpasses = &subpass;
-        err = vkCreateRenderPass(g_Device->device, &info, nullptr, &swapChain->renderPass);
+        err = vkCreateRenderPass(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->renderPass);
         g_Device->pCheckVkResultFn(err);
     }
     {
@@ -299,7 +299,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         for (uint32_t i = 0; i < countof(swapChain->images); ++i)
         {
             info.image = swapChain->images[i].back;
-            err = vkCreateImageView(g_Device->device, &info, nullptr, &swapChain->images[i].view);
+            err = vkCreateImageView(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].view);
             g_Device->pCheckVkResultFn(err);
         }
     }
@@ -320,7 +320,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         for (uint32_t i = 0; i < countof(swapChain->images); ++i)
         {
             attachment[0] = swapChain->images[i].view;
-            err = vkCreateFramebuffer(g_Device->device, &info, nullptr, &swapChain->images[i].front);
+            err = vkCreateFramebuffer(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].front);
             g_Device->pCheckVkResultFn(err);
         }
     }
@@ -409,21 +409,21 @@ void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain)
     vkQueueWaitIdle(device->queue);
     for (uint32_t i = 0; i < countof(pSwapChain->frames); ++i)
     {
-        vkDestroyFence(device->device, pSwapChain->frames[i].fence, nullptr);
+        vkDestroyFence(device->device, pSwapChain->frames[i].fence, VK_NULL_HANDLE);
         vkFreeCommandBuffers(device->device, pSwapChain->frames[i].pool, 1, &pSwapChain->frames[i].buffer);
-        vkDestroyCommandPool(device->device, pSwapChain->frames[i].pool, nullptr);
-        vkDestroySemaphore(device->device, pSwapChain->frames[i].acquired, nullptr);
-        vkDestroySemaphore(device->device, pSwapChain->frames[i].complete, nullptr);
+        vkDestroyCommandPool(device->device, pSwapChain->frames[i].pool, VK_NULL_HANDLE);
+        vkDestroySemaphore(device->device, pSwapChain->frames[i].acquired, VK_NULL_HANDLE);
+        vkDestroySemaphore(device->device, pSwapChain->frames[i].complete, VK_NULL_HANDLE);
     }
 
     moDeleteBuffer(device, pSwapChain->depthBuffer);
     for (uint32_t i = 0; i < countof(pSwapChain->images); ++i)
     {
-        vkDestroyImageView(device->device, pSwapChain->images[i].view, nullptr);
-        vkDestroyFramebuffer(device->device, pSwapChain->images[i].front, nullptr);
+        vkDestroyImageView(device->device, pSwapChain->images[i].view, VK_NULL_HANDLE);
+        vkDestroyFramebuffer(device->device, pSwapChain->images[i].front, VK_NULL_HANDLE);
     }
-    vkDestroyRenderPass(device->device, pSwapChain->renderPass, nullptr);
-    vkDestroySwapchainKHR(device->device, pSwapChain->swapChainKHR, nullptr);
+    vkDestroyRenderPass(device->device, pSwapChain->renderPass, VK_NULL_HANDLE);
+    vkDestroySwapchainKHR(device->device, pSwapChain->swapChainKHR, VK_NULL_HANDLE);
 }
 
 /*
