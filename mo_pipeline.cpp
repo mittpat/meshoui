@@ -50,7 +50,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
 
         VkDescriptorSetLayoutCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        info.bindingCount = (uint32_t)countof(binding);
+        info.bindingCount = countof(binding);
         info.pBindings = binding;
         err = vkCreateDescriptorSetLayout(g_Device->device, &info, VK_NULL_HANDLE, &pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT]);
         g_Device->pCheckVkResultFn(err);
@@ -69,7 +69,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
         }
         VkDescriptorSetLayoutCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        info.bindingCount = (uint32_t)countof(binding);
+        info.bindingCount = countof(binding);
         info.pBindings = binding;
         err = vkCreateDescriptorSetLayout(g_Device->device, &info, VK_NULL_HANDLE, &pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT]);
         g_Device->pCheckVkResultFn(err);
@@ -115,7 +115,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
         push_constants.emplace_back(VkPushConstantRange{VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant)});
         VkPipelineLayoutCreateInfo layout_info = {};
         layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layout_info.setLayoutCount = (uint32_t)countof(pipeline->descriptorSetLayout);
+        layout_info.setLayoutCount = countof(pipeline->descriptorSetLayout);
         layout_info.pSetLayouts = pipeline->descriptorSetLayout;
         layout_info.pushConstantRangeCount = (uint32_t)push_constants.size();
         layout_info.pPushConstantRanges = push_constants.data();
@@ -159,7 +159,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
 
     VkPipelineVertexInputStateCreateInfo vertex_info = {};
     vertex_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_info.vertexBindingDescriptionCount = (uint32_t)countof(binding_desc);
+    vertex_info.vertexBindingDescriptionCount = countof(binding_desc);
     vertex_info.pVertexBindingDescriptions = binding_desc;
     vertex_info.vertexAttributeDescriptionCount = (uint32_t)attribute_desc.size();
     vertex_info.pVertexAttributeDescriptions = attribute_desc.data();
@@ -210,7 +210,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
     VkDynamicState dynamic_states[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
     VkPipelineDynamicStateCreateInfo dynamic_state = {};
     dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamic_state.dynamicStateCount = (uint32_t)countof(dynamic_states);
+    dynamic_state.dynamicStateCount = countof(dynamic_states);
     dynamic_state.pDynamicStates = dynamic_states;
 
     VkGraphicsPipelineCreateInfo info = {};

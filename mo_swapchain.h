@@ -16,6 +16,7 @@ typedef struct MoSwapChainCreateInfo {
     VkExtent2D                   extent;
     linalg::aliases::float4      clearColor;
     VkBool32                     vsync;
+    VkBool32                     offscreen;
     void                       (*pCheckVkResultFn)(VkResult err);
 } MoSwapChainCreateInfo;
 
@@ -24,6 +25,7 @@ typedef struct MoSwapChainRecreateInfo {
     VkSurfaceFormatKHR surfaceFormat;
     VkExtent2D         extent;
     VkBool32           vsync;
+    VkBool32           offscreen;
 } MoSwapChainRecreateInfo;
 
 typedef struct MoSwapChain_T {
@@ -45,6 +47,9 @@ VkResult moEndSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphor
 
 // free swap chain, command and swap buffers
 void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain);
+
+// readback a framebuffer
+void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool);
 
 /*
 ------------------------------------------------------------------------------

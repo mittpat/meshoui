@@ -105,31 +105,31 @@ void moCreateBuffer(MoDevice device, MoImageBuffer *pImageBuffer, const VkExtent
     {
         VkMemoryRequirements req;
         vkGetImageMemoryRequirements(device->device, imageBuffer->image, &req);
-        VkMemoryAllocateInfo alloc_info = {};
-        alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        alloc_info.allocationSize = req.size;
-        alloc_info.memoryTypeIndex = moMemoryType(device->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
-        err = vkAllocateMemory(device->device, &alloc_info, VK_NULL_HANDLE, &imageBuffer->memory);
+        VkMemoryAllocateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        info.allocationSize = req.size;
+        info.memoryTypeIndex = moMemoryType(device->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+        err = vkAllocateMemory(device->device, &info, VK_NULL_HANDLE, &imageBuffer->memory);
         device->pCheckVkResultFn(err);
         err = vkBindImageMemory(device->device, imageBuffer->image, imageBuffer->memory, 0);
         device->pCheckVkResultFn(err);
     }
     {
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        view_info.image = imageBuffer->image;
-        view_info.format = format;
-        view_info.components.r = VK_COMPONENT_SWIZZLE_R;
-        view_info.components.g = VK_COMPONENT_SWIZZLE_G;
-        view_info.components.b = VK_COMPONENT_SWIZZLE_B;
-        view_info.components.a = VK_COMPONENT_SWIZZLE_A;
-        view_info.subresourceRange.aspectMask = aspectMask;
-        view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
-        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        err = vkCreateImageView(device->device, &view_info, VK_NULL_HANDLE, &imageBuffer->view);
+        VkImageViewCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        info.image = imageBuffer->image;
+        info.format = format;
+        info.components.r = VK_COMPONENT_SWIZZLE_R;
+        info.components.g = VK_COMPONENT_SWIZZLE_G;
+        info.components.b = VK_COMPONENT_SWIZZLE_B;
+        info.components.a = VK_COMPONENT_SWIZZLE_A;
+        info.subresourceRange.aspectMask = aspectMask;
+        info.subresourceRange.baseMipLevel = 0;
+        info.subresourceRange.levelCount = 1;
+        info.subresourceRange.baseArrayLayer = 0;
+        info.subresourceRange.layerCount = 1;
+        info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        err = vkCreateImageView(device->device, &info, VK_NULL_HANDLE, &imageBuffer->view);
         device->pCheckVkResultFn(err);
     }
 }
@@ -190,173 +190,6 @@ void moSetPMV(const MoPushConstant* pProjectionModelView)
 void moSetLight(const MoUniform* pLightAndCamera)
 {
     moUploadBuffer(g_Device, g_Pipeline->uniformBuffer[g_FrameIndex], sizeof(MoUniform), pLightAndCamera);
-}
-
-void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool)
-{
-    // Create the linear tiled destination image to copy to and to read the memory from
-    VkImageCreateInfo imgCreateInfo = {};
-    imgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    imgCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-    imgCreateInfo.extent.width = extent.width;
-    imgCreateInfo.extent.height = extent.height;
-    imgCreateInfo.extent.depth = 1;
-    imgCreateInfo.arrayLayers = 1;
-    imgCreateInfo.mipLevels = 1;
-    imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imgCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
-    imgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    // Create the image
-    VkImage dstImage;
-    VkResult err = vkCreateImage(g_Device->device, &imgCreateInfo, VK_NULL_HANDLE, &dstImage);
-    g_Device->pCheckVkResultFn(err);
-    // Create memory to back up the image
-    VkMemoryRequirements memRequirements;
-    VkMemoryAllocateInfo memAllocInfo = {};
-    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    VkDeviceMemory dstImageMemory;
-    vkGetImageMemoryRequirements(g_Device->device, dstImage, &memRequirements);
-    memAllocInfo.allocationSize = memRequirements.size;
-    // Memory must be host visible to copy from
-    memAllocInfo.memoryTypeIndex = moMemoryType(g_Device->physicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memRequirements.memoryTypeBits);
-    err = vkAllocateMemory(g_Device->device, &memAllocInfo, VK_NULL_HANDLE, &dstImageMemory);
-    g_Device->pCheckVkResultFn(err);
-    err = vkBindImageMemory(g_Device->device, dstImage, dstImageMemory, 0);
-    g_Device->pCheckVkResultFn(err);
-    // Do the actual blit from the offscreen image to our host visible destination image
-    VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
-    cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    cmdBufAllocateInfo.commandPool = commandPool;
-    cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    cmdBufAllocateInfo.commandBufferCount = 1;
-    VkCommandBuffer copyCmd;
-    err = vkAllocateCommandBuffers(g_Device->device, &cmdBufAllocateInfo, &copyCmd);
-    g_Device->pCheckVkResultFn(err);
-    VkCommandBufferBeginInfo cmdBufInfo = {};
-    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    err = vkBeginCommandBuffer(copyCmd, &cmdBufInfo);
-    g_Device->pCheckVkResultFn(err);
-
-    auto insertImageMemoryBarrier = [](
-        VkCommandBuffer cmdbuffer,
-        VkImage image,
-        VkAccessFlags srcAccessMask,
-        VkAccessFlags dstAccessMask,
-        VkImageLayout oldImageLayout,
-        VkImageLayout newImageLayout,
-        VkPipelineStageFlags srcStageMask,
-        VkPipelineStageFlags dstStageMask,
-        VkImageSubresourceRange subresourceRange)
-    {
-        VkImageMemoryBarrier imageMemoryBarrier = {};
-        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageMemoryBarrier.srcAccessMask = srcAccessMask;
-        imageMemoryBarrier.dstAccessMask = dstAccessMask;
-        imageMemoryBarrier.oldLayout = oldImageLayout;
-        imageMemoryBarrier.newLayout = newImageLayout;
-        imageMemoryBarrier.image = image;
-        imageMemoryBarrier.subresourceRange = subresourceRange;
-
-        vkCmdPipelineBarrier(
-            cmdbuffer,
-            srcStageMask,
-            dstStageMask,
-            0,
-            0, VK_NULL_HANDLE,
-            0, VK_NULL_HANDLE,
-            1, &imageMemoryBarrier);
-    };
-
-    // Transition destination image to transfer destination layout
-    insertImageMemoryBarrier(
-        copyCmd,
-        dstImage,
-        0,
-        VK_ACCESS_TRANSFER_WRITE_BIT,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-    // colorAttachment.image is already in VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, and does not need to be transitioned
-
-    VkImageCopy imageCopyRegion{};
-    imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    imageCopyRegion.srcSubresource.layerCount = 1;
-    imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    imageCopyRegion.dstSubresource.layerCount = 1;
-    imageCopyRegion.extent.width = extent.width;
-    imageCopyRegion.extent.height = extent.height;
-    imageCopyRegion.extent.depth = 1;
-
-    vkCmdCopyImage(
-        copyCmd,
-        source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &imageCopyRegion);
-
-    // Transition destination image to general layout, which is the required layout for mapping the image memory later on
-    insertImageMemoryBarrier(
-        copyCmd,
-        dstImage,
-        VK_ACCESS_TRANSFER_WRITE_BIT,
-        VK_ACCESS_MEMORY_READ_BIT,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_GENERAL,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-    VkResult res = vkEndCommandBuffer(copyCmd);
-    g_Device->pCheckVkResultFn(err);
-
-    {
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &copyCmd;
-        VkFenceCreateInfo fenceInfo = {};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        VkFence fence;
-        res = vkCreateFence(g_Device->device, &fenceInfo, VK_NULL_HANDLE, &fence);
-        g_Device->pCheckVkResultFn(err);
-        res = vkQueueSubmit(g_Device->queue, 1, &submitInfo, fence);
-        g_Device->pCheckVkResultFn(err);
-        res = vkWaitForFences(g_Device->device, 1, &fence, VK_TRUE, UINT64_MAX);
-        g_Device->pCheckVkResultFn(err);
-        vkDestroyFence(g_Device->device, fence, VK_NULL_HANDLE);
-    }
-
-    // Get layout of the image (including row pitch)
-    VkImageSubresource subResource{};
-    subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    VkSubresourceLayout subResourceLayout;
-
-    vkGetImageSubresourceLayout(g_Device->device, dstImage, &subResource, &subResourceLayout);
-
-    // Map image memory so we can start copying from it
-    const char* imageData = {};
-    vkMapMemory(g_Device->device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&imageData);
-    imageData += subResourceLayout.offset;
-
-    for (std::uint32_t pixel = 0; pixel < destinationSize && pixel < subResourceLayout.size; pixel += 4)
-    {
-        pDestination[pixel + 0] = imageData[pixel + 0];
-        pDestination[pixel + 1] = imageData[pixel + 1];
-        pDestination[pixel + 2] = imageData[pixel + 2];
-        pDestination[pixel + 3] = 255;
-    }
-
-    // Clean up resources
-    vkUnmapMemory(g_Device->device, dstImageMemory);
-    vkFreeMemory(g_Device->device, dstImageMemory, VK_NULL_HANDLE);
-    vkDestroyImage(g_Device->device, dstImage, VK_NULL_HANDLE);
 }
 
 /*

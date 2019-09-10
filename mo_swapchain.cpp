@@ -46,6 +46,42 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
     }
 
     // Create image buffers
+    if (pCreateInfo->offscreen)
+    {
+        swapChain->extent = pCreateInfo->extent;
+        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        {
+            {
+                VkImageCreateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+                info.imageType = VK_IMAGE_TYPE_2D;
+                info.format = pCreateInfo->surfaceFormat.format;
+                info.extent = {pCreateInfo->extent.width, pCreateInfo->extent.height, 1};
+                info.mipLevels = 1;
+                info.arrayLayers = 1;
+                info.samples = VK_SAMPLE_COUNT_1_BIT;
+                info.tiling = VK_IMAGE_TILING_OPTIMAL;
+                info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+                info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                err = vkCreateImage(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].back);
+                pCreateInfo->device->pCheckVkResultFn(err);
+            }
+            {
+                VkMemoryRequirements req;
+                vkGetImageMemoryRequirements(pCreateInfo->device->device, swapChain->images[i].back, &req);
+                VkMemoryAllocateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+                info.allocationSize = req.size;
+                info.memoryTypeIndex = moMemoryType(pCreateInfo->device->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+                err = vkAllocateMemory(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].memory);
+                pCreateInfo->device->pCheckVkResultFn(err);
+                err = vkBindImageMemory(pCreateInfo->device->device, swapChain->images[i].back, swapChain->images[i].memory, 0);
+                pCreateInfo->device->pCheckVkResultFn(err);
+            }
+        }
+    }
+    else
     {
         VkSwapchainCreateInfoKHR info = {};
         info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -101,7 +137,14 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         attachment[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachment[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        if (pCreateInfo->offscreen)
+        {
+            attachment[0].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        }
+        else
+        {
+            attachment[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        }
         attachment[1].format = VK_FORMAT_D16_UNORM;
         attachment[1].samples = VK_SAMPLE_COUNT_1_BIT;
         attachment[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -188,12 +231,53 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     {
         vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
         vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
+        if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
+        {
+            vkFreeMemory(g_Device->device, swapChain->images[i].memory, VK_NULL_HANDLE);
+            vkDestroyImage(g_Device->device, swapChain->images[i].back, VK_NULL_HANDLE);
+        }
     }
     if (swapChain->renderPass)
     {
         vkDestroyRenderPass(g_Device->device, swapChain->renderPass, VK_NULL_HANDLE);
     }
 
+    if (pCreateInfo->offscreen)
+    {
+        swapChain->extent = pCreateInfo->extent;
+        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        {
+            {
+                VkImageCreateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+                info.imageType = VK_IMAGE_TYPE_2D;
+                info.format = pCreateInfo->surfaceFormat.format;
+                info.extent = {pCreateInfo->extent.width, pCreateInfo->extent.height, 1};
+                info.mipLevels = 1;
+                info.arrayLayers = 1;
+                info.samples = VK_SAMPLE_COUNT_1_BIT;
+                info.tiling = VK_IMAGE_TILING_OPTIMAL;
+                info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+                info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                err = vkCreateImage(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].back);
+                g_Device->pCheckVkResultFn(err);
+            }
+            {
+                VkMemoryRequirements req;
+                vkGetImageMemoryRequirements(g_Device->device, swapChain->images[i].back, &req);
+                VkMemoryAllocateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+                info.allocationSize = req.size;
+                info.memoryTypeIndex = moMemoryType(g_Device->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+                err = vkAllocateMemory(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].memory);
+                g_Device->pCheckVkResultFn(err);
+                err = vkBindImageMemory(g_Device->device, swapChain->images[i].back, swapChain->images[i].memory, 0);
+                g_Device->pCheckVkResultFn(err);
+            }
+        }
+    }
+    else
     {
         VkSwapchainCreateInfoKHR info = {};
         info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -253,7 +337,14 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         attachment[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachment[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        if (pCreateInfo->offscreen)
+        {
+            attachment[0].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        }
+        else
+        {
+            attachment[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        }
         attachment[1].format = VK_FORMAT_D16_UNORM;
         attachment[1].samples = VK_SAMPLE_COUNT_1_BIT;
         attachment[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -330,8 +421,14 @@ void moBeginSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphore 
 {
     VkResult err;
 
-    *pImageAcquiredSemaphore = swapChain->frames[*pFrameIndex].acquired;
+    if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
     {
+        pImageAcquiredSemaphore = nullptr;
+    }
+    else
+    {
+        *pImageAcquiredSemaphore = swapChain->frames[*pFrameIndex].acquired;
+
         err = vkAcquireNextImageKHR(g_Device->device, swapChain->swapChainKHR, UINT64_MAX, *pImageAcquiredSemaphore, VK_NULL_HANDLE, pFrameIndex);
         g_Device->pCheckVkResultFn(err);
 
@@ -372,33 +469,70 @@ void moBeginSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphore 
 
 VkResult moEndSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphore *pImageAcquiredSemaphore)
 {
+    VkResult err;
+
     vkCmdEndRenderPass(swapChain->frames[*pFrameIndex].buffer);
+
+    if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
     {
-        VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        err = vkEndCommandBuffer(swapChain->frames[*pFrameIndex].buffer);
+        g_Device->pCheckVkResultFn(err);
+
+        err = vkResetFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence);
+        g_Device->pCheckVkResultFn(err);
+
         VkSubmitInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        info.waitSemaphoreCount = 1;
-        info.pWaitSemaphores = pImageAcquiredSemaphore;
-        info.pWaitDstStageMask = &wait_stage;
         info.commandBufferCount = 1;
         info.pCommandBuffers = &swapChain->frames[*pFrameIndex].buffer;
         info.signalSemaphoreCount = 1;
         info.pSignalSemaphores = &swapChain->frames[*pFrameIndex].complete;
 
-        VkResult err = vkEndCommandBuffer(swapChain->frames[*pFrameIndex].buffer);
-        g_Device->pCheckVkResultFn(err);
         err = vkQueueSubmit(g_Device->queue, 1, &info, swapChain->frames[*pFrameIndex].fence);
         g_Device->pCheckVkResultFn(err);
+
+        err = vkWaitForFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence, VK_TRUE, UINT64_MAX);
+        g_Device->pCheckVkResultFn(err);
+
+        err = vkResetFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence);
+        g_Device->pCheckVkResultFn(err);
+
+        *pFrameIndex += 1;
+        *pFrameIndex %= MO_FRAME_COUNT;
+    }
+    else
+    {
+        {
+            VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            VkSubmitInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            info.waitSemaphoreCount = 1;
+            info.pWaitSemaphores = pImageAcquiredSemaphore;
+            info.pWaitDstStageMask = &wait_stage;
+            info.commandBufferCount = 1;
+            info.pCommandBuffers = &swapChain->frames[*pFrameIndex].buffer;
+            info.signalSemaphoreCount = 1;
+            info.pSignalSemaphores = &swapChain->frames[*pFrameIndex].complete;
+
+            VkResult err = vkEndCommandBuffer(swapChain->frames[*pFrameIndex].buffer);
+            g_Device->pCheckVkResultFn(err);
+
+            err = vkQueueSubmit(g_Device->queue, 1, &info, swapChain->frames[*pFrameIndex].fence);
+            g_Device->pCheckVkResultFn(err);
+        }
+        {
+            VkPresentInfoKHR info = {};
+            info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+            info.waitSemaphoreCount = 1;
+            info.pWaitSemaphores = &swapChain->frames[*pFrameIndex].complete;
+            info.swapchainCount = 1;
+            info.pSwapchains = &swapChain->swapChainKHR;
+            info.pImageIndices = pFrameIndex;
+            err = vkQueuePresentKHR(g_Device->queue, &info);
+        }
     }
 
-    VkPresentInfoKHR info = {};
-    info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    info.waitSemaphoreCount = 1;
-    info.pWaitSemaphores = &swapChain->frames[*pFrameIndex].complete;
-    info.swapchainCount = 1;
-    info.pSwapchains = &swapChain->swapChainKHR;
-    info.pImageIndices = pFrameIndex;
-    return vkQueuePresentKHR(g_Device->queue, &info);
+    return err;
 }
 
 void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain)
@@ -421,9 +555,181 @@ void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain)
     {
         vkDestroyImageView(device->device, pSwapChain->images[i].view, VK_NULL_HANDLE);
         vkDestroyFramebuffer(device->device, pSwapChain->images[i].front, VK_NULL_HANDLE);
+        if (pSwapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
+        {
+            vkFreeMemory(device->device, pSwapChain->images[i].memory, VK_NULL_HANDLE);
+            vkDestroyImage(device->device, pSwapChain->images[i].back, VK_NULL_HANDLE);
+        }
     }
     vkDestroyRenderPass(device->device, pSwapChain->renderPass, VK_NULL_HANDLE);
     vkDestroySwapchainKHR(device->device, pSwapChain->swapChainKHR, VK_NULL_HANDLE);
+}
+
+void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool)
+{
+    // Create the linear tiled destination image to copy to and to read the memory from
+    VkImageCreateInfo imgCreateInfo = {};
+    imgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imgCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    imgCreateInfo.extent.width = extent.width;
+    imgCreateInfo.extent.height = extent.height;
+    imgCreateInfo.extent.depth = 1;
+    imgCreateInfo.arrayLayers = 1;
+    imgCreateInfo.mipLevels = 1;
+    imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imgCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+    imgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    // Create the image
+    VkImage dstImage;
+    VkResult err = vkCreateImage(g_Device->device, &imgCreateInfo, VK_NULL_HANDLE, &dstImage);
+    g_Device->pCheckVkResultFn(err);
+    // Create memory to back up the image
+    VkMemoryRequirements memRequirements;
+    VkMemoryAllocateInfo memAllocInfo = {};
+    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    VkDeviceMemory dstImageMemory;
+    vkGetImageMemoryRequirements(g_Device->device, dstImage, &memRequirements);
+    memAllocInfo.allocationSize = memRequirements.size;
+    // Memory must be host visible to copy from
+    memAllocInfo.memoryTypeIndex = moMemoryType(g_Device->physicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memRequirements.memoryTypeBits);
+    err = vkAllocateMemory(g_Device->device, &memAllocInfo, VK_NULL_HANDLE, &dstImageMemory);
+    g_Device->pCheckVkResultFn(err);
+    err = vkBindImageMemory(g_Device->device, dstImage, dstImageMemory, 0);
+    g_Device->pCheckVkResultFn(err);
+    // Do the actual blit from the offscreen image to our host visible destination image
+    VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
+    cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmdBufAllocateInfo.commandPool = commandPool;
+    cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    cmdBufAllocateInfo.commandBufferCount = 1;
+    VkCommandBuffer copyCmd;
+    err = vkAllocateCommandBuffers(g_Device->device, &cmdBufAllocateInfo, &copyCmd);
+    g_Device->pCheckVkResultFn(err);
+    VkCommandBufferBeginInfo cmdBufInfo = {};
+    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    err = vkBeginCommandBuffer(copyCmd, &cmdBufInfo);
+    g_Device->pCheckVkResultFn(err);
+
+    auto insertImageMemoryBarrier = [](
+        VkCommandBuffer cmdbuffer,
+        VkImage image,
+        VkAccessFlags srcAccessMask,
+        VkAccessFlags dstAccessMask,
+        VkImageLayout oldImageLayout,
+        VkImageLayout newImageLayout,
+        VkPipelineStageFlags srcStageMask,
+        VkPipelineStageFlags dstStageMask,
+        VkImageSubresourceRange subresourceRange)
+    {
+        VkImageMemoryBarrier imageMemoryBarrier = {};
+        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.srcAccessMask = srcAccessMask;
+        imageMemoryBarrier.dstAccessMask = dstAccessMask;
+        imageMemoryBarrier.oldLayout = oldImageLayout;
+        imageMemoryBarrier.newLayout = newImageLayout;
+        imageMemoryBarrier.image = image;
+        imageMemoryBarrier.subresourceRange = subresourceRange;
+
+        vkCmdPipelineBarrier(
+            cmdbuffer,
+            srcStageMask,
+            dstStageMask,
+            0,
+            0, VK_NULL_HANDLE,
+            0, VK_NULL_HANDLE,
+            1, &imageMemoryBarrier);
+    };
+
+    // Transition destination image to transfer destination layout
+    insertImageMemoryBarrier(
+        copyCmd,
+        dstImage,
+        0,
+        VK_ACCESS_TRANSFER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+    // colorAttachment.image is already in VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, and does not need to be transitioned
+
+    VkImageCopy imageCopyRegion{};
+    imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageCopyRegion.srcSubresource.layerCount = 1;
+    imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageCopyRegion.dstSubresource.layerCount = 1;
+    imageCopyRegion.extent.width = extent.width;
+    imageCopyRegion.extent.height = extent.height;
+    imageCopyRegion.extent.depth = 1;
+
+    vkCmdCopyImage(
+        copyCmd,
+        source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &imageCopyRegion);
+
+    // Transition destination image to general layout, which is the required layout for mapping the image memory later on
+    insertImageMemoryBarrier(
+        copyCmd,
+        dstImage,
+        VK_ACCESS_TRANSFER_WRITE_BIT,
+        VK_ACCESS_MEMORY_READ_BIT,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_GENERAL,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+    VkResult res = vkEndCommandBuffer(copyCmd);
+    g_Device->pCheckVkResultFn(err);
+
+    {
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &copyCmd;
+        VkFenceCreateInfo fenceInfo = {};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFence fence;
+        res = vkCreateFence(g_Device->device, &fenceInfo, VK_NULL_HANDLE, &fence);
+        g_Device->pCheckVkResultFn(err);
+        res = vkQueueSubmit(g_Device->queue, 1, &submitInfo, fence);
+        g_Device->pCheckVkResultFn(err);
+        res = vkWaitForFences(g_Device->device, 1, &fence, VK_TRUE, UINT64_MAX);
+        g_Device->pCheckVkResultFn(err);
+        vkDestroyFence(g_Device->device, fence, VK_NULL_HANDLE);
+    }
+
+    // Get layout of the image (including row pitch)
+    VkImageSubresource subResource{};
+    subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    VkSubresourceLayout subResourceLayout;
+
+    vkGetImageSubresourceLayout(g_Device->device, dstImage, &subResource, &subResourceLayout);
+
+    // Map image memory so we can start copying from it
+    const char* imageData = {};
+    vkMapMemory(g_Device->device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&imageData);
+    imageData += subResourceLayout.offset;
+
+    for (std::uint32_t pixel = 0; pixel < destinationSize && pixel < subResourceLayout.size; pixel += 4)
+    {
+        pDestination[pixel + 0] = imageData[pixel + 0];
+        pDestination[pixel + 1] = imageData[pixel + 1];
+        pDestination[pixel + 2] = imageData[pixel + 2];
+        pDestination[pixel + 3] = 255;
+    }
+
+    // Clean up resources
+    vkUnmapMemory(g_Device->device, dstImageMemory);
+    vkFreeMemory(g_Device->device, dstImageMemory, VK_NULL_HANDLE);
+    vkDestroyImage(g_Device->device, dstImage, VK_NULL_HANDLE);
 }
 
 /*

@@ -19,9 +19,10 @@ typedef struct MoImageBuffer_T {
 }* MoImageBuffer;
 
 typedef struct MoSwapBuffer {
-    VkImage       back;
-    VkImageView   view;
-    VkFramebuffer front;
+    VkImage        back;
+    VkImageView    view;
+    VkFramebuffer  front;
+    VkDeviceMemory memory;
 } MoSwapBuffer;
 
 typedef struct MoCommandBuffer {
@@ -63,10 +64,7 @@ void moSetPMV(const MoPushConstant* pProjectionModelView);
 // set the camera's position and light position (as a UBO)
 void moSetLight(const MoUniform* pLightAndCamera);
 
-// readback a framebuffer
-void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool);
-
-template <typename T, size_t N> size_t countof(T (& arr)[N]) { return std::extent<T[N]>::value; }
+template <typename T, size_t N> std::uint32_t countof(T (& arr)[N]) { return std::uint32_t(std::extent<T[N]>::value); }
 
 /*
 ------------------------------------------------------------------------------

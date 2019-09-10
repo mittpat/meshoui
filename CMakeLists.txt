@@ -16,9 +16,9 @@ add_executable(meshouiview
     ${shaders})
 
 if(NOT MSVC)
-    target_link_libraries(meshouiview ${Vulkan_LIBRARIES} assimp glfw linalg stdc++fs)
+    target_link_libraries(meshouiview ${Vulkan_LIBRARIES} assimp glfw linalg stb stdc++fs)
 else()
-    target_link_libraries(meshouiview ${Vulkan_LIBRARIES} assimp glfw linalg)
+    target_link_libraries(meshouiview ${Vulkan_LIBRARIES} assimp glfw linalg stb)
 endif()
 
 add_custom_command(TARGET meshouiview POST_BUILD

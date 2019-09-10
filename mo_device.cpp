@@ -124,7 +124,7 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
         deviceFeatures.textureCompressionBC = VK_TRUE;
         VkDeviceCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        create_info.queueCreateInfoCount = (uint32_t)countof(queue_info);
+        create_info.queueCreateInfoCount = countof(queue_info);
         create_info.pQueueCreateInfos = queue_info;
         create_info.enabledExtensionCount = device_extensions_count;
         create_info.ppEnabledExtensionNames = device_extensions;
@@ -152,8 +152,8 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
         VkDescriptorPoolCreateInfo pool_info = {};
         pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        pool_info.maxSets = 1000 * (uint32_t)countof(pool_sizes);
-        pool_info.poolSizeCount = (uint32_t)countof(pool_sizes);
+        pool_info.maxSets = 1000 * countof(pool_sizes);
+        pool_info.poolSizeCount = countof(pool_sizes);
         pool_info.pPoolSizes = pool_sizes;
         err = vkCreateDescriptorPool(device->device, &pool_info, VK_NULL_HANDLE, &device->descriptorPool);
         pCreateInfo->pCheckVkResultFn(err);
@@ -164,8 +164,7 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
     vkGetPhysicalDeviceSurfaceSupportKHR(device->physicalDevice, device->queueFamily, pCreateInfo->surface, &res);
     if (res != VK_TRUE)
     {
-        printf("Error no WSI support on physical device 0\n");
-        abort();
+        printf("No WSI support on physical device 0\n");
     }
 
     pCreateInfo->pSurfaceFormat->format = VK_FORMAT_UNDEFINED;
@@ -249,6 +248,7 @@ void moInit(MoInitInfo *pInfo)
         g_SwapChain->images[i].back = pInfo->pSwapChainSwapBuffers[i].back;
         g_SwapChain->images[i].view = pInfo->pSwapChainSwapBuffers[i].view;
         g_SwapChain->images[i].front = pInfo->pSwapChainSwapBuffers[i].front;
+        g_SwapChain->images[i].memory = pInfo->pSwapChainSwapBuffers[i].memory;
     }
 
     MoPipelineCreateInfo pipelineCreateInfo = {};
