@@ -10,16 +10,17 @@ set_source_files_properties(${shaders} PROPERTIES HEADER_FILE_ONLY TRUE)
 set(resources resources/teapot.dae)
 set_source_files_properties(${resources} PROPERTIES HEADER_FILE_ONLY TRUE)
 add_library(meshoui
-    mo_buffer.cpp  mo_material.cpp        mo_mesh.cpp        mo_pipeline.cpp
-    mo_buffer.h    mo_material.h          mo_mesh.h          mo_pipeline.h
-    mo_device.cpp  mo_material_utils.cpp  mo_mesh_utils.cpp  mo_swapchain.cpp
-    mo_device.h    mo_material_utils.h    mo_mesh_utils.h    mo_swapchain.h
+    mo_array.h     mo_example_utils.h     mo_mesh.cpp        mo_node.h
+    mo_buffer.cpp  mo_material.cpp        mo_mesh.h          mo_pipeline.cpp
+    mo_buffer.h    mo_material.h          mo_mesh_utils.cpp  mo_pipeline.h
+    mo_device.cpp  mo_material_utils.cpp  mo_mesh_utils.h    mo_swapchain.cpp
+    mo_device.h    mo_material_utils.h    mo_node.cpp        mo_swapchain.h
     ${shaders} ${resources})
 target_include_directories(meshoui PUBLIC .)
 if(NOT MSVC)
-    target_link_libraries(meshoui PUBLIC ${Vulkan_LIBRARIES} assimp linalg stdc++fs)
+    target_link_libraries(meshoui PUBLIC ${Vulkan_LIBRARIES} assimp linalg stb stdc++fs)
 else()
-    target_link_libraries(meshoui PUBLIC ${Vulkan_LIBRARIES} assimp linalg)
+    target_link_libraries(meshoui PUBLIC ${Vulkan_LIBRARIES} assimp linalg stb)
 endif()
 
 add_custom_command(TARGET meshoui POST_BUILD
@@ -37,8 +38,8 @@ add_custom_command(TARGET meshoui_spirv POST_BUILD
 add_dependencies(meshoui meshoui_spirv)
 
 add_executable(teapot_readback examples/teapot_readback/main.cpp)
-target_link_libraries(teapot_readback PUBLIC meshoui stb)
+target_link_libraries(teapot_readback PUBLIC meshoui)
 
 add_executable(teapot_viewer examples/teapot_viewer/main.cpp)
-target_link_libraries(teapot_viewer PUBLIC meshoui glfw stb)
+target_link_libraries(teapot_viewer PUBLIC meshoui glfw)
 
