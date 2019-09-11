@@ -562,7 +562,10 @@ void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain)
         }
     }
     vkDestroyRenderPass(device->device, pSwapChain->renderPass, VK_NULL_HANDLE);
-    vkDestroySwapchainKHR(device->device, pSwapChain->swapChainKHR, VK_NULL_HANDLE);
+    if (pSwapChain->swapChainKHR != VK_NULL_HANDLE)
+    {
+        vkDestroySwapchainKHR(device->device, pSwapChain->swapChainKHR, VK_NULL_HANDLE);
+    }
 }
 
 void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool)

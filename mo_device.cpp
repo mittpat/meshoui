@@ -159,17 +159,18 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
         pCreateInfo->pCheckVkResultFn(err);
     }
 
-    // Check for WSI support
-    VkBool32 res;
-    vkGetPhysicalDeviceSurfaceSupportKHR(device->physicalDevice, device->queueFamily, pCreateInfo->surface, &res);
-    if (res != VK_TRUE)
+    if (pCreateInfo->surface != VK_NULL_HANDLE)
     {
-        printf("No WSI support on physical device 0\n");
-    }
+        // Check for WSI support
+        VkBool32 res;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device->physicalDevice, device->queueFamily, pCreateInfo->surface, &res);
+        if (res != VK_TRUE)
+        {
+            printf("No WSI support on physical device 0\n");
+        }
 
-    pCreateInfo->pSurfaceFormat->format = VK_FORMAT_UNDEFINED;
+        pCreateInfo->pSurfaceFormat->format = VK_FORMAT_UNDEFINED;
 
-    {
         uint32_t avail_count;
         vkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, pCreateInfo->surface, &avail_count, VK_NULL_HANDLE);
         std::vector<VkSurfaceFormatKHR> avail_format(avail_count);

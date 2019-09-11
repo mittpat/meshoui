@@ -26,9 +26,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-
 #include <fstream>
 
 namespace std { namespace filesystem = experimental::filesystem; }
@@ -360,21 +357,19 @@ int main(int argc, char** argv)
     VkSurfaceKHR                 surface = VK_NULL_HANDLE;
     VkSurfaceFormatKHR           surfaceFormat = {};
     uint32_t                     frameIndex = 0;
-    VkBool32                     offscreen = VK_FALSE;
 
     MoInputs                     inputs = {};
 
     // Initialization
-    int width = 640;
-    int height = 480;
     {
         glfwSetErrorCallback(glfw_error_callback);
         glfwInit();
+        int width, height;
 #ifndef NDEBUG
         width = 1920 / 2;
         height = 1080 / 2;
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        window = glfwCreateWindow(width, height, "MeshouiView", nullptr, nullptr);
+        window = glfwCreateWindow(width, height, std::filesystem::path(argv[0]).stem().c_str(), nullptr, nullptr);
 #else
         {
             const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -436,16 +431,12 @@ int main(int argc, char** argv)
 
         // Create SwapChain, RenderPass, Framebuffer, etc.
         {
-            if (offscreen)
-                surfaceFormat.format = VK_FORMAT_R8G8B8A8_UNORM;
-
             MoSwapChainCreateInfo createInfo = {};
             createInfo.device = device;
             createInfo.surface = surface;
             createInfo.surfaceFormat = surfaceFormat;
             createInfo.extent = {(uint32_t)width, (uint32_t)height};
             createInfo.vsync = VK_TRUE;
-            createInfo.offscreen = offscreen;
             createInfo.pCheckVkResultFn = vk_check_result;
             moCreateSwapChain(&createInfo, &swapChain);
         }
@@ -477,7 +468,7 @@ int main(int argc, char** argv)
     MoCamera camera{"__default_camera", {0.f, 10.f, 30.f}, 0.f, 0.f};
     MoLight light{"__default_light", translation_matrix(float3{-300.f, 300.f, 150.f})};
 
-    std::filesystem::path fileToLoad = "teapot.dae";
+    std::filesystem::path fileToLoad = "resources/teapot.dae";
 
     // Dome
     MoMesh sphereMesh;
@@ -601,7 +592,7 @@ int main(int argc, char** argv)
         VkResult err = moEndSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);
         if (err == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            width = 0, height = 0;
+            int width = 0, height = 0;
             while (width == 0 || height == 0)
             {
                 glfwGetFramebufferSize(window, &width, &height);
@@ -617,18 +608,10 @@ int main(int argc, char** argv)
             recreateInfo.surfaceFormat = surfaceFormat;
             recreateInfo.extent = {(uint32_t)width, (uint32_t)height};
             recreateInfo.vsync = VK_TRUE;
-            recreateInfo.offscreen = offscreen;
             moRecreateSwapChain(&recreateInfo, swapChain);
             err = VK_SUCCESS;
         }
-        vk_check_result(err);
-
-        if (offscreen)
-        {
-            readback.resize(width * height * 4);
-            moFramebufferReadback(swapChain->images[0].back, {std::uint32_t(width), std::uint32_t(height)}, readback.data(), readback.size(), swapChain->frames[0].pool);
-            break;
-        }
+        vk_check_result(err);        
     }
 
     // Dome
@@ -648,14 +631,6 @@ int main(int argc, char** argv)
 
     glfwDestroyWindow(window);
     glfwTerminate();
-
-    if (offscreen)
-    {
-        char outputFilename[256];
-        snprintf(outputFilename, 256, "%s_%d_readback.png", argv[0], int(time(0)));
-        stbi_write_png(outputFilename, width, height, 4, readback.data(), 4 * width);
-        printf("saved output as %s\n", outputFilename);
-    }
 
     return 0;
 }
