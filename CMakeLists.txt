@@ -10,11 +10,12 @@ set_source_files_properties(${shaders} PROPERTIES HEADER_FILE_ONLY TRUE)
 set(resources resources/teapot.dae)
 set_source_files_properties(${resources} PROPERTIES HEADER_FILE_ONLY TRUE)
 add_library(meshoui
-    mo_array.h     mo_example_utils.h     mo_mesh.cpp        mo_node.h
-    mo_buffer.cpp  mo_material.cpp        mo_mesh.h          mo_pipeline.cpp
-    mo_buffer.h    mo_material.h          mo_mesh_utils.cpp  mo_pipeline.h
-    mo_device.cpp  mo_material_utils.cpp  mo_mesh_utils.h    mo_swapchain.cpp
-    mo_device.h    mo_material_utils.h    mo_node.cpp        mo_swapchain.h
+    mo_array.h          mo_material.cpp        mo_mesh_utils.cpp  mo_pipeline_utils.cpp
+    mo_buffer.cpp       mo_material.h          mo_mesh_utils.h    mo_pipeline_utils.h
+    mo_buffer.h         mo_material_utils.cpp  mo_node.cpp        mo_swapchain.cpp
+    mo_device.cpp       mo_material_utils.h    mo_node.h          mo_swapchain.h
+    mo_device.h         mo_mesh.cpp            mo_pipeline.cpp
+    mo_example_utils.h  mo_mesh.h              mo_pipeline.h
     ${shaders} ${resources})
 target_include_directories(meshoui PUBLIC .)
 if(NOT MSVC)

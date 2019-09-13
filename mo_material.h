@@ -1,10 +1,16 @@
 #pragma once
 
 #include "mo_buffer.h"
+#include "mo_pipeline.h"
 
 #include <vulkan/vulkan.h>
 
 #include <linalg.h>
+
+typedef struct MoMaterialRegistration {
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSet descriptorSet;
+} MoMaterialRegistration;
 
 typedef struct MoMaterial_T {
     VkSampler ambientSampler;
@@ -12,13 +18,13 @@ typedef struct MoMaterial_T {
     VkSampler normalSampler;
     VkSampler specularSampler;
     VkSampler emissiveSampler;
-    // this descriptor set uses only immutable samplers, one set per swapchain
-    VkDescriptorSet descriptorSet;
     MoImageBuffer ambientImage;
     MoImageBuffer diffuseImage;
     MoImageBuffer normalImage;
     MoImageBuffer specularImage;
-    MoImageBuffer emissiveImage;
+    MoImageBuffer emissiveImage;    
+    std::uint32_t                 registrationCount;
+    const MoMaterialRegistration* pRegistrations;
 }* MoMaterial;
 
 typedef struct MoTextureInfo {
@@ -31,7 +37,6 @@ typedef struct MoTextureInfo {
 } MoTextureInfo;
 
 typedef struct MoMaterialCreateInfo {
-    VkDescriptorSetLayout descriptorSetLayout;
     linalg::aliases::float4 colorAmbient;
     linalg::aliases::float4 colorDiffuse;
     linalg::aliases::float4 colorSpecular;
@@ -45,6 +50,7 @@ typedef struct MoMaterialCreateInfo {
 
 // upload a new phong material to the GPU and return a handle
 void moCreateMaterial(const MoMaterialCreateInfo* pCreateInfo, MoMaterial* pMaterial);
+void moRegisterMaterial(MoPipeline pipeline, MoMaterial material);
 
 // free a material
 void moDestroyMaterial(MoMaterial material);

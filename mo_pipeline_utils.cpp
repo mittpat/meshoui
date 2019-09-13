@@ -1,33 +1,49 @@
-#pragma once
+#include "mo_pipeline_utils.h"
 
-#include "mo_material.h"
-#include "mo_mesh.h"
+#include <fstream>
+#include <vector>
 
-#include <linalg.h>
-
-typedef struct MoNode_T* MoNode;
-typedef struct MoNode_T
+void moCreatePhongPipeline(MoPipeline *pPipeline)
 {
-    char                      name[256];
-    linalg::aliases::float4x4 model;
-    MoMesh                    mesh;
-    MoMaterial                material;
-    std::uint32_t             nodeCount;
-    const MoNode*             pNodes;
-}* MoNode;
+    MoPipelineCreateInfo info = {};
+    info.flags = MO_PIPELINE_FEATURE_DEFAULT;
+    std::vector<char> mo_phong_shader_vert_spv;
+    {
+        std::ifstream fileStream("phong.vert.spv", std::ifstream::binary);
+        mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    std::vector<char> mo_phong_shader_frag_spv;
+    {
+        std::ifstream fileStream("phong.frag.spv", std::ifstream::binary);
+        mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    info.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
+    info.vertexShaderSize = mo_phong_shader_vert_spv.size();
+    info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
+    info.fragmentShaderSize = mo_phong_shader_frag_spv.size();
+    moCreatePipeline(&info, pPipeline);
+}
 
-typedef struct MoScene_T
+void moCreateDomePipeline(MoPipeline *pPipeline)
 {
-    const MoMesh*             pMeshes;
-    std::uint32_t             meshCount;
-    const MoMaterial*         pMaterials;
-    std::uint32_t             materialCount;
-    MoNode                    root;
-}* MoScene;
-
-void moCreateScene(const char* filename, MoScene* pScene);
-
-void moDestroyScene(MoScene scene);
+    MoPipelineCreateInfo info = {};
+    std::vector<char> mo_dome_shader_vert_spv;
+    {
+        std::ifstream fileStream("dome.vert.spv", std::ifstream::binary);
+        mo_dome_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    std::vector<char> mo_dome_shader_frag_spv;
+    {
+        std::ifstream fileStream("dome.frag.spv", std::ifstream::binary);
+        mo_dome_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    info.pVertexShader = (std::uint32_t*)mo_dome_shader_vert_spv.data();
+    info.vertexShaderSize = mo_dome_shader_vert_spv.size();
+    info.pFragmentShader = (std::uint32_t*)mo_dome_shader_frag_spv.data();
+    info.fragmentShaderSize = mo_dome_shader_frag_spv.size();
+    info.flags = MO_PIPELINE_FEATURE_NONE;
+    moCreatePipeline(&info, pPipeline);
+}
 
 /*
 ------------------------------------------------------------------------------

@@ -1,7 +1,8 @@
 #include "mo_material.h"
 #include "mo_device.h"
-#include "mo_pipeline.h"
 #include "mo_swapchain.h"
+
+#include "mo_array.h"
 
 #include <cstdint>
 #include <vector>
@@ -131,46 +132,54 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
         err = vkCreateSampler(g_Device->device, &info, VK_NULL_HANDLE, &material->emissiveSampler);
         g_Device->pCheckVkResultFn(err);
     }
+}
+
+void moRegisterMaterial(MoPipeline pipeline, MoMaterial material)
+{
+    MoMaterialRegistration registration = {};
+    registration.pipelineLayout = pipeline->pipelineLayout;
 
     {
-        VkDescriptorSetAllocateInfo alloc_info = {};
-        alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        alloc_info.descriptorPool = g_Device->descriptorPool;
-        alloc_info.descriptorSetCount = 1;
-        alloc_info.pSetLayouts = &pCreateInfo->descriptorSetLayout;
-        err = vkAllocateDescriptorSets(g_Device->device, &alloc_info, &material->descriptorSet);
+        VkDescriptorSetAllocateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        info.descriptorPool = g_Device->descriptorPool;
+        info.descriptorSetCount = 1;
+        info.pSetLayouts = &pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT];
+        VkResult err = vkAllocateDescriptorSets(g_Device->device, &info, &registration.descriptorSet);
         g_Device->pCheckVkResultFn(err);
     }
 
     {
-        VkDescriptorImageInfo desc_image[5] = {};
-        desc_image[0].sampler = material->ambientSampler;
-        desc_image[0].imageView = material->ambientImage->view;
-        desc_image[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        desc_image[1].sampler = material->diffuseSampler;
-        desc_image[1].imageView = material->diffuseImage->view;
-        desc_image[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        desc_image[2].sampler = material->normalSampler;
-        desc_image[2].imageView = material->normalImage->view;
-        desc_image[2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        desc_image[3].sampler = material->specularSampler;
-        desc_image[3].imageView = material->specularImage->view;
-        desc_image[3].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        desc_image[4].sampler = material->emissiveSampler;
-        desc_image[4].imageView = material->emissiveImage->view;
-        desc_image[4].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        VkWriteDescriptorSet write_desc[5] = {};
+        VkDescriptorImageInfo imageDescriptor[5] = {};
+        imageDescriptor[0].sampler = material->ambientSampler;
+        imageDescriptor[0].imageView = material->ambientImage->view;
+        imageDescriptor[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageDescriptor[1].sampler = material->diffuseSampler;
+        imageDescriptor[1].imageView = material->diffuseImage->view;
+        imageDescriptor[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageDescriptor[2].sampler = material->normalSampler;
+        imageDescriptor[2].imageView = material->normalImage->view;
+        imageDescriptor[2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageDescriptor[3].sampler = material->specularSampler;
+        imageDescriptor[3].imageView = material->specularImage->view;
+        imageDescriptor[3].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageDescriptor[4].sampler = material->emissiveSampler;
+        imageDescriptor[4].imageView = material->emissiveImage->view;
+        imageDescriptor[4].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        VkWriteDescriptorSet writeDescriptor[5] = {};
         for (uint32_t i = 0; i < 5; ++i)
         {
-            write_desc[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write_desc[i].dstSet = material->descriptorSet;
-            write_desc[i].dstBinding = i;
-            write_desc[i].descriptorCount = 1;
-            write_desc[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            write_desc[i].pImageInfo = &desc_image[i];
+            writeDescriptor[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptor[i].dstSet = registration.descriptorSet;
+            writeDescriptor[i].dstBinding = i;
+            writeDescriptor[i].descriptorCount = 1;
+            writeDescriptor[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            writeDescriptor[i].pImageInfo = &imageDescriptor[i];
         }
-        vkUpdateDescriptorSets(g_Device->device, 5, write_desc, 0, VK_NULL_HANDLE);
+        vkUpdateDescriptorSets(g_Device->device, 5, writeDescriptor, 0, VK_NULL_HANDLE);
     }
+
+    carray_push_back(&material->pRegistrations, &material->registrationCount, registration);
 }
 
 void moDestroyMaterial(MoMaterial material)
@@ -193,7 +202,14 @@ void moDestroyMaterial(MoMaterial material)
 void moBindMaterial(MoMaterial material, VkPipelineLayout pipelineLayout)
 {
     auto & frame = g_SwapChain->frames[g_FrameIndex];
-    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material->descriptorSet, 0, VK_NULL_HANDLE);
+    for (std::uint32_t i = 0; i < material->registrationCount; ++i)
+    {
+        if (material->pRegistrations[i].pipelineLayout == pipelineLayout)
+        {
+            vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material->pRegistrations[i].descriptorSet, 0, VK_NULL_HANDLE);
+            break;
+        }
+    }
 }
 
 /*

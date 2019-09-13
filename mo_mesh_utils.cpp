@@ -5,7 +5,7 @@
 using namespace linalg;
 using namespace linalg::aliases;
 
-void moDemoCube(MoMesh *pMesh, const linalg::aliases::float3 & halfExtents)
+void moCreateDemoCube(MoMesh *pMesh, const linalg::aliases::float3 & halfExtents)
 {
     static float3 cube_positions[] = { { -halfExtents.x, -halfExtents.y, -halfExtents.z },
                                        { -halfExtents.x, -halfExtents.y,  halfExtents.z },
@@ -151,7 +151,7 @@ void moUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sp
     }
 }
 
-void moDemoSphere(MoMesh *pMesh)
+void moCreateDemoSphere(MoMesh *pMesh)
 {
     static float2 sphere_texcoords[] = {{ 0.0f, 0.0f }};
     std::vector<float3> sphere_positions;

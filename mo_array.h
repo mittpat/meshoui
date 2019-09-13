@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-std::uint32_t carray_nextPowerOfTwo(std::uint32_t v)
+static std::uint32_t carray_nextPowerOfTwo(std::uint32_t v)
 {
     v--;
     v |= v >> 1;

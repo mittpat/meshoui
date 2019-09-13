@@ -1,33 +1,10 @@
 #pragma once
 
-#include "mo_material.h"
-#include "mo_mesh.h"
+#include "mo_pipeline.h"
 
-#include <linalg.h>
+void moCreatePhongPipeline(MoPipeline *pPipeline);
 
-typedef struct MoNode_T* MoNode;
-typedef struct MoNode_T
-{
-    char                      name[256];
-    linalg::aliases::float4x4 model;
-    MoMesh                    mesh;
-    MoMaterial                material;
-    std::uint32_t             nodeCount;
-    const MoNode*             pNodes;
-}* MoNode;
-
-typedef struct MoScene_T
-{
-    const MoMesh*             pMeshes;
-    std::uint32_t             meshCount;
-    const MoMaterial*         pMaterials;
-    std::uint32_t             materialCount;
-    MoNode                    root;
-}* MoScene;
-
-void moCreateScene(const char* filename, MoScene* pScene);
-
-void moDestroyScene(MoScene scene);
+void moCreateDomePipeline(MoPipeline *pPipeline);
 
 /*
 ------------------------------------------------------------------------------

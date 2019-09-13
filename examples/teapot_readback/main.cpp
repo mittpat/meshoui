@@ -1,8 +1,3 @@
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
-
 #include <vulkan/vulkan.h>
 
 #include "mo_device.h"
@@ -12,6 +7,7 @@
 #include "mo_mesh_utils.h"
 #include "mo_node.h"
 #include "mo_pipeline.h"
+#include "mo_pipeline_utils.h"
 #include "mo_swapchain.h"
 
 #include <linalg.h>
@@ -22,8 +18,6 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
-
-#include <fstream>
 
 namespace std { namespace filesystem = experimental::filesystem; }
 using namespace linalg;
@@ -121,58 +115,21 @@ int main(int argc, char** argv)
 
     // Phong
     MoPipeline phongPipeline;
-    {
-        MoPipelineCreateInfo info = {};
-        info.flags = MO_PIPELINE_FEATURE_DEFAULT;
-        std::vector<char> mo_phong_shader_vert_spv;
-        {
-            std::ifstream fileStream("phong.vert.spv", std::ifstream::binary);
-            mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-        }
-        std::vector<char> mo_phong_shader_frag_spv;
-        {
-            std::ifstream fileStream("phong.frag.spv", std::ifstream::binary);
-            mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-        }
-        info.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
-        info.vertexShaderSize = mo_phong_shader_vert_spv.size();
-        info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
-        info.fragmentShaderSize = mo_phong_shader_frag_spv.size();
-
-        moCreatePipeline(&info, &phongPipeline);
-    }
+    moCreatePhongPipeline(&phongPipeline);
 
     // Dome
     MoPipeline domePipeline;
-    {
-        MoPipelineCreateInfo info = {};
-        std::vector<char> mo_dome_shader_vert_spv;
-        {
-            std::ifstream fileStream("dome.vert.spv", std::ifstream::binary);
-            mo_dome_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-        }
-        std::vector<char> mo_dome_shader_frag_spv;
-        {
-            std::ifstream fileStream("dome.frag.spv", std::ifstream::binary);
-            mo_dome_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-        }
-        info.pVertexShader = (std::uint32_t*)mo_dome_shader_vert_spv.data();
-        info.vertexShaderSize = mo_dome_shader_vert_spv.size();
-        info.pFragmentShader = (std::uint32_t*)mo_dome_shader_frag_spv.data();
-        info.fragmentShaderSize = mo_dome_shader_frag_spv.size();
-        info.flags = MO_PIPELINE_FEATURE_NONE;
-        moCreatePipeline(&info, &domePipeline);
-    }
+    moCreateDomePipeline(&domePipeline);
 
     MoMesh sphereMesh;
-    moDemoSphere(&sphereMesh);
+    moCreateDemoSphere(&sphereMesh);
     MoMaterial domeMaterial;
     {
         MoMaterialCreateInfo info = {};
-        info.descriptorSetLayout = domePipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT];
         info.colorAmbient = { 0.4f, 0.5f, 0.75f, 1.0f };
         info.colorDiffuse = { 0.7f, 0.45f, 0.1f, 1.0f };
         moCreateMaterial(&info, &domeMaterial);
+        moRegisterMaterial(domePipeline, domeMaterial);
     }
     MoCamera camera{"__default_camera", {0.f, 10.f, 30.f}, 0.f, 0.f};
     MoLight light{"__default_light", translation_matrix(float3{-300.f, 300.f, 150.f})};
@@ -186,7 +143,11 @@ int main(int argc, char** argv)
     {
         if (!fileToLoad.empty())
         {
-            moCreateScene(fileToLoad.c_str(), &scene, phongPipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT]);
+            moCreateScene(fileToLoad.c_str(), &scene);
+            for (std::uint32_t i = 0; i < scene->materialCount; ++i)
+            {
+                moRegisterMaterial(phongPipeline, scene->pMaterials[i]);
+            }
             fileToLoad = "";
         }
 
@@ -273,9 +234,6 @@ int main(int argc, char** argv)
 
     return 0;
 }
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
 /*
 ------------------------------------------------------------------------------

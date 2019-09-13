@@ -5,10 +5,10 @@
 #include <linalg.h>
 
 // create a cube mesh
-void moDemoCube(MoMesh* pMesh, const linalg::aliases::float3 & halfExtents = linalg::aliases::float3(1.0f, 1.0f, 1.0f));
+void moCreateDemoCube(MoMesh* pMesh, const linalg::aliases::float3 & halfExtents = linalg::aliases::float3(1.0f, 1.0f, 1.0f));
 
 // create a uv sphere mesh
-void moDemoSphere(MoMesh *pMesh);
+void moCreateDemoSphere(MoMesh *pMesh);
 
 /*
 ------------------------------------------------------------------------------

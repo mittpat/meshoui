@@ -1,9 +1,8 @@
 #include "mo_material_utils.h"
 
-void moDefaultMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLayout)
+void moCreateDefaultMaterial(MoMaterial *pMaterial)
 {
     MoMaterialCreateInfo info = {};
-    info.descriptorSetLayout = descriptorSetLayout;
     info.colorAmbient = { 0.1f, 0.1f, 0.1f, 1.0f };
     info.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
     info.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
@@ -11,7 +10,7 @@ void moDefaultMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSe
     moCreateMaterial(&info, pMaterial);
 }
 
-void moDemoMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLayout)
+void moCreateDemoMaterial(MoMaterial *pMaterial)
 {
     const uint32_t diffuse[8*8] = {0xff1a07e3,0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,0xff6091f7,
                                    0xff6091f7,0xff1a07e3,0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,
@@ -23,7 +22,6 @@ void moDemoMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLa
                                    0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,0xff6091f7,0xff1a07e3};
 
     MoMaterialCreateInfo info = {};
-    info.descriptorSetLayout = descriptorSetLayout;
     info.colorAmbient = { 0.2f, 0.2f, 0.2f, 1.0f };
     info.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
     info.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
@@ -33,7 +31,7 @@ void moDemoMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLa
     moCreateMaterial(&info, pMaterial);
 }
 
-void moGridMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLayout)
+void moCreateGridMaterial(MoMaterial *pMaterial)
 {
     const uint32_t diffuse[8*8] = {0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
                                    0xffffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,
@@ -45,7 +43,6 @@ void moGridMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLa
                                    0xffffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff};
 
     MoMaterialCreateInfo info = {};
-    info.descriptorSetLayout = descriptorSetLayout;
     info.colorAmbient = { 0.2f, 0.2f, 0.2f, 1.0f };
     info.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
     info.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
