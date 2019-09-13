@@ -31,6 +31,7 @@ typedef struct MoTextureInfo {
 } MoTextureInfo;
 
 typedef struct MoMaterialCreateInfo {
+    VkDescriptorSetLayout descriptorSetLayout;
     linalg::aliases::float4 colorAmbient;
     linalg::aliases::float4 colorDiffuse;
     linalg::aliases::float4 colorSpecular;
@@ -49,7 +50,7 @@ void moCreateMaterial(const MoMaterialCreateInfo* pCreateInfo, MoMaterial* pMate
 void moDestroyMaterial(MoMaterial material);
 
 // bind a material
-void moBindMaterial(MoMaterial material);
+void moBindMaterial(MoMaterial material, VkPipelineLayout pipelineLayout);
 
 /*
 ------------------------------------------------------------------------------

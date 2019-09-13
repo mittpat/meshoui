@@ -25,7 +25,7 @@ typedef struct MoScene_T
     MoNode                    root;
 }* MoScene;
 
-void moCreateScene(const char* filename, MoScene* pScene);
+void moCreateScene(const char* filename, MoScene* pScene, VkDescriptorSetLayout descriptorSetLayout);
 
 void moDestroyScene(MoScene scene);
 

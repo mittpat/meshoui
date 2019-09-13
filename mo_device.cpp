@@ -1,21 +1,15 @@
 #include "mo_device.h"
 #include "mo_buffer.h"
-#include "mo_pipeline.h"
 #include "mo_swapchain.h"
 
-#include <assert.h>
-#include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
 #include <vector>
 
 VkDebugReportCallbackEXT  g_DebugReport     = VK_NULL_HANDLE;
 MoDevice                  g_Device          = VK_NULL_HANDLE;
 VkInstance                g_Instance        = VK_NULL_HANDLE;
 MoSwapChain               g_SwapChain       = VK_NULL_HANDLE;
-MoPipeline                g_Pipeline        = VK_NULL_HANDLE;
-MoPipeline                g_StashedPipeline = VK_NULL_HANDLE;
 std::uint32_t             g_FrameIndex      = 0;
 
 void moCreateInstance(MoInstanceCreateInfo *pCreateInfo, VkInstance *pInstance)
@@ -216,10 +210,6 @@ void moDestroyDevice(MoDevice device)
 
 void moInit(MoInitInfo *pInfo)
 {
-    assert(g_Instance == VK_NULL_HANDLE);
-    assert(g_Device == VK_NULL_HANDLE);
-    assert(nullptr == VK_NULL_HANDLE);
-
     g_Instance = pInfo->instance;
     g_Device = new MoDevice_T;
     *g_Device = {};
@@ -251,31 +241,10 @@ void moInit(MoInitInfo *pInfo)
         g_SwapChain->images[i].front = pInfo->pSwapChainSwapBuffers[i].front;
         g_SwapChain->images[i].memory = pInfo->pSwapChainSwapBuffers[i].memory;
     }
-
-    MoPipelineCreateInfo pipelineCreateInfo = {};
-    pipelineCreateInfo.flags = MO_PIPELINE_FEATURE_DEFAULT;
-    std::vector<char> mo_phong_shader_vert_spv;
-    {
-        std::ifstream fileStream("phong.vert.spv", std::ifstream::binary);
-        mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    std::vector<char> mo_phong_shader_frag_spv;
-    {
-        std::ifstream fileStream("phong.frag.spv", std::ifstream::binary);
-        mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    pipelineCreateInfo.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
-    pipelineCreateInfo.vertexShaderSize = mo_phong_shader_vert_spv.size();
-    pipelineCreateInfo.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
-    pipelineCreateInfo.fragmentShaderSize = mo_phong_shader_frag_spv.size();
-
-    moCreatePipeline(&pipelineCreateInfo, &g_Pipeline);
 }
 
 void moShutdown()
 {
-    moDestroyPipeline(g_Pipeline);
-    g_Pipeline = VK_NULL_HANDLE;
     g_Instance = VK_NULL_HANDLE;
     g_Device->physicalDevice = VK_NULL_HANDLE;
     g_Device->device = VK_NULL_HANDLE;
@@ -285,8 +254,6 @@ void moShutdown()
     g_SwapChain->swapChainKHR = VK_NULL_HANDLE;
     g_SwapChain->renderPass = VK_NULL_HANDLE;
     g_SwapChain->extent = {0, 0};
-//    g_SwapChain->frames = {};
-//    g_SwapChain->images = {};
     g_Device->descriptorPool = VK_NULL_HANDLE;
     delete g_Device;
     delete g_SwapChain;

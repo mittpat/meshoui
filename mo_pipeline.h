@@ -39,14 +39,11 @@ typedef struct MoPipelineCreateInfo {
 // use this function to create a different pipeline than the default
 void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipeline);
 
-// override the default pipeline, the default is restored when called with null
-void moPipelineOverride(MoPipeline pipeline = VK_NULL_HANDLE);
-
 // destroy a pipeline other than the default
 void moDestroyPipeline(MoPipeline pipeline);
 
 // start a new frame against the current pipeline
-void moBegin(uint32_t frameIndex);
+void moBegin(uint32_t frameIndex, MoPipeline pipeline);
 
 /*
 ------------------------------------------------------------------------------

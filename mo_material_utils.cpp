@@ -1,16 +1,17 @@
 #include "mo_material_utils.h"
 
-void moDefaultMaterial(MoMaterial *pMaterial)
+void moDefaultMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLayout)
 {
-    MoMaterialCreateInfo materialInfo = {};
-    materialInfo.colorAmbient = { 0.1f, 0.1f, 0.1f, 1.0f };
-    materialInfo.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
-    materialInfo.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
-    materialInfo.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
-    moCreateMaterial(&materialInfo, pMaterial);
+    MoMaterialCreateInfo info = {};
+    info.descriptorSetLayout = descriptorSetLayout;
+    info.colorAmbient = { 0.1f, 0.1f, 0.1f, 1.0f };
+    info.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
+    info.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
+    info.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
+    moCreateMaterial(&info, pMaterial);
 }
 
-void moDemoMaterial(MoMaterial *pMaterial)
+void moDemoMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLayout)
 {
     const uint32_t diffuse[8*8] = {0xff1a07e3,0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,0xff6091f7,
                                    0xff6091f7,0xff1a07e3,0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,
@@ -21,17 +22,18 @@ void moDemoMaterial(MoMaterial *pMaterial)
                                    0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,0xff6091f7,0xff1a07e3,0xff48f4fb,
                                    0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,0xff6091f7,0xff1a07e3};
 
-    MoMaterialCreateInfo materialInfo = {};
-    materialInfo.colorAmbient = { 0.2f, 0.2f, 0.2f, 1.0f };
-    materialInfo.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
-    materialInfo.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
-    materialInfo.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
-    materialInfo.textureDiffuse.pData = (uint8_t*)diffuse;
-    materialInfo.textureDiffuse.extent = { 8, 8 };
-    moCreateMaterial(&materialInfo, pMaterial);
+    MoMaterialCreateInfo info = {};
+    info.descriptorSetLayout = descriptorSetLayout;
+    info.colorAmbient = { 0.2f, 0.2f, 0.2f, 1.0f };
+    info.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
+    info.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
+    info.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
+    info.textureDiffuse.pData = (uint8_t*)diffuse;
+    info.textureDiffuse.extent = { 8, 8 };
+    moCreateMaterial(&info, pMaterial);
 }
 
-void moGridMaterial(MoMaterial *pMaterial)
+void moGridMaterial(MoMaterial *pMaterial, VkDescriptorSetLayout descriptorSetLayout)
 {
     const uint32_t diffuse[8*8] = {0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
                                    0xffffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,
@@ -42,14 +44,15 @@ void moGridMaterial(MoMaterial *pMaterial)
                                    0xffffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,
                                    0xffffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff};
 
-    MoMaterialCreateInfo materialInfo = {};
-    materialInfo.colorAmbient = { 0.2f, 0.2f, 0.2f, 1.0f };
-    materialInfo.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
-    materialInfo.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
-    materialInfo.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
-    materialInfo.textureDiffuse.pData = (uint8_t*)diffuse;
-    materialInfo.textureDiffuse.extent = { 8, 8 };
-    moCreateMaterial(&materialInfo, pMaterial);
+    MoMaterialCreateInfo info = {};
+    info.descriptorSetLayout = descriptorSetLayout;
+    info.colorAmbient = { 0.2f, 0.2f, 0.2f, 1.0f };
+    info.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
+    info.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
+    info.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
+    info.textureDiffuse.pData = (uint8_t*)diffuse;
+    info.textureDiffuse.extent = { 8, 8 };
+    moCreateMaterial(&info, pMaterial);
 }
 
 /*

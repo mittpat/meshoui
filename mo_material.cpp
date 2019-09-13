@@ -11,7 +11,6 @@ using namespace linalg::aliases;
 
 extern MoDevice      g_Device;
 extern MoSwapChain   g_SwapChain;
-extern MoPipeline    g_Pipeline;
 extern std::uint32_t g_FrameIndex;
 
 void generateTexture(MoImageBuffer *pImageBuffer, const MoTextureInfo &textureInfo, const float4 &fallbackColor, VkCommandPool commandPool, VkCommandBuffer commandBuffer)
@@ -138,7 +137,7 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
         alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         alloc_info.descriptorPool = g_Device->descriptorPool;
         alloc_info.descriptorSetCount = 1;
-        alloc_info.pSetLayouts = &g_Pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT];
+        alloc_info.pSetLayouts = &pCreateInfo->descriptorSetLayout;
         err = vkAllocateDescriptorSets(g_Device->device, &alloc_info, &material->descriptorSet);
         g_Device->pCheckVkResultFn(err);
     }
@@ -191,10 +190,10 @@ void moDestroyMaterial(MoMaterial material)
     delete material;
 }
 
-void moBindMaterial(MoMaterial material)
+void moBindMaterial(MoMaterial material, VkPipelineLayout pipelineLayout)
 {
     auto & frame = g_SwapChain->frames[g_FrameIndex];
-    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipelineLayout, 1, 1, &material->descriptorSet, 0, VK_NULL_HANDLE);
+    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material->descriptorSet, 0, VK_NULL_HANDLE);
 }
 
 /*

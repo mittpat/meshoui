@@ -252,43 +252,52 @@ int main(int argc, char** argv)
 
     // Meshoui initialization
     {
-        MoInitInfo initInfo = {};
-        initInfo.instance = instance;
-        initInfo.physicalDevice = device->physicalDevice;
-        initInfo.device = device->device;
-        initInfo.queueFamily = device->queueFamily;
-        initInfo.queue = device->queue;
-        initInfo.descriptorPool = device->descriptorPool;
-        initInfo.pSwapChainSwapBuffers = swapChain->images;
-        initInfo.swapChainSwapBufferCount = MO_FRAME_COUNT;
-        initInfo.pSwapChainCommandBuffers = swapChain->frames;
-        initInfo.swapChainCommandBufferCount = MO_FRAME_COUNT;
-        initInfo.depthBuffer = swapChain->depthBuffer;
-        initInfo.swapChainKHR = swapChain->swapChainKHR;
-        initInfo.renderPass = swapChain->renderPass;
-        initInfo.extent = swapChain->extent;
-        initInfo.pCheckVkResultFn = device->pCheckVkResultFn;
-        moInit(&initInfo);
+        MoInitInfo info = {};
+        info.instance = instance;
+        info.physicalDevice = device->physicalDevice;
+        info.device = device->device;
+        info.queueFamily = device->queueFamily;
+        info.queue = device->queue;
+        info.descriptorPool = device->descriptorPool;
+        info.pSwapChainSwapBuffers = swapChain->images;
+        info.swapChainSwapBufferCount = MO_FRAME_COUNT;
+        info.pSwapChainCommandBuffers = swapChain->frames;
+        info.swapChainCommandBufferCount = MO_FRAME_COUNT;
+        info.depthBuffer = swapChain->depthBuffer;
+        info.swapChainKHR = swapChain->swapChainKHR;
+        info.renderPass = swapChain->renderPass;
+        info.extent = swapChain->extent;
+        info.pCheckVkResultFn = device->pCheckVkResultFn;
+        moInit(&info);
     }
 
-    MoCamera camera{"__default_camera", {0.f, 10.f, 30.f}, 0.f, 0.f};
-    MoLight light{"__default_light", translation_matrix(float3{-300.f, 300.f, 150.f})};
+    // Phong
+    MoPipeline phongPipeline;
+    {
+        MoPipelineCreateInfo info = {};
+        info.flags = MO_PIPELINE_FEATURE_DEFAULT;
+        std::vector<char> mo_phong_shader_vert_spv;
+        {
+            std::ifstream fileStream("phong.vert.spv", std::ifstream::binary);
+            mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+        }
+        std::vector<char> mo_phong_shader_frag_spv;
+        {
+            std::ifstream fileStream("phong.frag.spv", std::ifstream::binary);
+            mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+        }
+        info.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
+        info.vertexShaderSize = mo_phong_shader_vert_spv.size();
+        info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
+        info.fragmentShaderSize = mo_phong_shader_frag_spv.size();
 
-    std::filesystem::path fileToLoad = "resources/teapot.dae";
+        moCreatePipeline(&info, &phongPipeline);
+    }
 
     // Dome
-    MoMesh sphereMesh;
-    moDemoSphere(&sphereMesh);
-    MoMaterial domeMaterial;
-    {
-        MoMaterialCreateInfo materialInfo = {};
-        materialInfo.colorAmbient = { 0.4f, 0.5f, 0.75f, 1.0f };
-        materialInfo.colorDiffuse = { 0.7f, 0.45f, 0.1f, 1.0f };
-        moCreateMaterial(&materialInfo, &domeMaterial);
-    }
     MoPipeline domePipeline;
     {
-        MoPipelineCreateInfo pipelineCreateInfo = {};
+        MoPipelineCreateInfo info = {};
         std::vector<char> mo_dome_shader_vert_spv;
         {
             std::ifstream fileStream("dome.vert.spv", std::ifstream::binary);
@@ -299,17 +308,29 @@ int main(int argc, char** argv)
             std::ifstream fileStream("dome.frag.spv", std::ifstream::binary);
             mo_dome_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
         }
-        pipelineCreateInfo.pVertexShader = (std::uint32_t*)mo_dome_shader_vert_spv.data();
-        pipelineCreateInfo.vertexShaderSize = mo_dome_shader_vert_spv.size();
-        pipelineCreateInfo.pFragmentShader = (std::uint32_t*)mo_dome_shader_frag_spv.data();
-        pipelineCreateInfo.fragmentShaderSize = mo_dome_shader_frag_spv.size();
-        pipelineCreateInfo.flags = MO_PIPELINE_FEATURE_NONE;
-        moCreatePipeline(&pipelineCreateInfo, &domePipeline);
+        info.pVertexShader = (std::uint32_t*)mo_dome_shader_vert_spv.data();
+        info.vertexShaderSize = mo_dome_shader_vert_spv.size();
+        info.pFragmentShader = (std::uint32_t*)mo_dome_shader_frag_spv.data();
+        info.fragmentShaderSize = mo_dome_shader_frag_spv.size();
+        info.flags = MO_PIPELINE_FEATURE_NONE;
+        moCreatePipeline(&info, &domePipeline);
     }
 
-    std::vector<std::uint8_t> readback;
-
+    MoMesh sphereMesh;
+    moDemoSphere(&sphereMesh);
+    MoMaterial domeMaterial;
+    {
+        MoMaterialCreateInfo info = {};
+        info.descriptorSetLayout = domePipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT];
+        info.colorAmbient = { 0.4f, 0.5f, 0.75f, 1.0f };
+        info.colorDiffuse = { 0.7f, 0.45f, 0.1f, 1.0f };
+        moCreateMaterial(&info, &domeMaterial);
+    }
+    MoCamera camera{"__default_camera", {0.f, 10.f, 30.f}, 0.f, 0.f};
+    MoLight light{"__default_light", translation_matrix(float3{-300.f, 300.f, 150.f})};
     MoScene scene = {};
+
+    std::filesystem::path fileToLoad = "resources/teapot.dae";
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -319,7 +340,7 @@ int main(int argc, char** argv)
 
         if (!fileToLoad.empty())
         {
-            moCreateScene(fileToLoad.c_str(), &scene);
+            moCreateScene(fileToLoad.c_str(), &scene, phongPipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT]);
             fileToLoad = "";
         }
 
@@ -344,14 +365,13 @@ int main(int argc, char** argv)
         // Frame begin
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);
-        moPipelineOverride(domePipeline);
-        moBegin(frameIndex);
+        moBegin(frameIndex, domePipeline);
 
         {
             MoUniform uni = {};
             uni.light = light.model.w.xyz();
             uni.camera = camera.position;
-            moSetLight(&uni);
+            moUploadBuffer(device, domePipeline->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
         }
         {
             float4x4 view = inverse(camera.model());
@@ -362,18 +382,17 @@ int main(int argc, char** argv)
             pmv.view = view;
             {
                 pmv.model = identity;
-                moSetPMV(&pmv);
-                moBindMaterial(domeMaterial);
+                vkCmdPushConstants(swapChain->frames[frameIndex].buffer, domePipeline->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+                moBindMaterial(domeMaterial, domePipeline->pipelineLayout);
                 moDrawMesh(sphereMesh);
             }
         }
-        moPipelineOverride();
-        moBegin(frameIndex);
+        moBegin(frameIndex, phongPipeline);
         {
             MoUniform uni = {};
             uni.light = light.model.w.xyz();
             uni.camera = camera.model().w.xyz();
-            moSetLight(&uni);
+            moUploadBuffer(device, phongPipeline->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
         }
         if (scene)
         {
@@ -384,9 +403,9 @@ int main(int argc, char** argv)
             {
                 if (node->material && node->mesh)
                 {
-                    moBindMaterial(node->material);
+                    moBindMaterial(node->material, phongPipeline->pipelineLayout);
                     pmv.model = model;
-                    moSetPMV(&pmv);
+                    vkCmdPushConstants(swapChain->frames[frameIndex].buffer, phongPipeline->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
                     moDrawMesh(node->mesh);
                 }
                 for (std::uint32_t i = 0; i < node->nodeCount; ++i)
@@ -425,9 +444,10 @@ int main(int argc, char** argv)
 
     // Meshoui cleanup
     moDestroyScene(scene);
-    moDestroyPipeline(domePipeline);
     moDestroyMaterial(domeMaterial);
     moDestroyMesh(sphereMesh);
+    moDestroyPipeline(domePipeline);
+    moDestroyPipeline(phongPipeline);
 
     // Cleanup
     moShutdown();

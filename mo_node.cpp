@@ -51,7 +51,7 @@ void moDestroyNode(MoNode node)
     delete node;
 }
 
-void moCreateScene(const char *filename, MoScene* pScene)
+void moCreateScene(const char *filename, MoScene* pScene, VkDescriptorSetLayout descriptorSetLayout)
 {
     MoScene scene = *pScene = new MoScene_T();
     *scene = {};
@@ -68,6 +68,7 @@ void moCreateScene(const char *filename, MoScene* pScene)
             auto* material = aScene->mMaterials[materialIdx];
 
             MoMaterialCreateInfo materialInfo = {};
+            materialInfo.descriptorSetLayout = descriptorSetLayout;
             std::vector<std::pair<const char*, float4*>> colorMappings =
             {{std::array<const char*,3>{AI_MATKEY_COLOR_AMBIENT}[0], &materialInfo.colorAmbient},
              {std::array<const char*,3>{AI_MATKEY_COLOR_DIFFUSE}[0], &materialInfo.colorDiffuse},

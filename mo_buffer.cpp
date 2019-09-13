@@ -6,7 +6,6 @@
 
 extern MoDevice    g_Device;
 extern MoSwapChain g_SwapChain;
-extern MoPipeline  g_Pipeline;
 extern uint32_t    g_FrameIndex;
 
 uint32_t moMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t type_bits)
@@ -180,16 +179,6 @@ void moDeleteBuffer(MoDevice device, MoImageBuffer imageBuffer)
     vkDestroyImage(device->device, imageBuffer->image, VK_NULL_HANDLE);
     vkFreeMemory(device->device, imageBuffer->memory, VK_NULL_HANDLE);
     delete imageBuffer;
-}
-
-void moSetPMV(const MoPushConstant* pProjectionModelView)
-{
-    vkCmdPushConstants(g_SwapChain->frames[g_FrameIndex].buffer, g_Pipeline->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), pProjectionModelView);
-}
-
-void moSetLight(const MoUniform* pLightAndCamera)
-{
-    moUploadBuffer(g_Device, g_Pipeline->uniformBuffer[g_FrameIndex], sizeof(MoUniform), pLightAndCamera);
 }
 
 /*

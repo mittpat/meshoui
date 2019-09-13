@@ -9,8 +9,6 @@ using namespace linalg;
 using namespace linalg::aliases;
 
 extern MoDevice      g_Device;
-extern MoPipeline    g_Pipeline;
-extern MoPipeline    g_StashedPipeline;
 extern MoSwapChain   g_SwapChain;
 extern std::uint32_t g_FrameIndex;
 
@@ -252,28 +250,12 @@ void moDestroyPipeline(MoPipeline pipeline)
     delete pipeline;
 }
 
-void moBegin(uint32_t frameIndex)
+void moBegin(uint32_t frameIndex, MoPipeline pipeline)
 {
     g_FrameIndex = frameIndex;
     auto & frame = g_SwapChain->frames[g_FrameIndex];
-    vkCmdBindPipeline(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipeline);
-    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_Pipeline->pipelineLayout, 0, 1, &g_Pipeline->descriptorSet[g_FrameIndex], 0, VK_NULL_HANDLE);
-}
-
-void moPipelineOverride(MoPipeline pipeline)
-{
-    if (pipeline == VK_NULL_HANDLE)
-    {
-        if (g_StashedPipeline != VK_NULL_HANDLE)
-            g_Pipeline = g_StashedPipeline;
-        g_StashedPipeline = VK_NULL_HANDLE;
-    }
-    else
-    {
-        if (g_StashedPipeline == VK_NULL_HANDLE)
-            g_StashedPipeline = g_Pipeline;
-        g_Pipeline = pipeline;
-    }
+    vkCmdBindPipeline(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
+    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout, 0, 1, &pipeline->descriptorSet[g_FrameIndex], 0, VK_NULL_HANDLE);
 }
 
 /*

@@ -58,12 +58,6 @@ void moTransferBuffer(VkCommandBuffer commandBuffer, MoDeviceBuffer fromBuffer, 
 
 void moDeleteBuffer(MoDevice device, MoImageBuffer imageBuffer);
 
-// set view's projection and view matrices, and the mesh's model matrix (as a push constant)
-void moSetPMV(const MoPushConstant* pProjectionModelView);
-
-// set the camera's position and light position (as a UBO)
-void moSetLight(const MoUniform* pLightAndCamera);
-
 template <typename T, size_t N> std::uint32_t countof(T (& arr)[N]) { return std::uint32_t(std::extent<T[N]>::value); }
 
 /*
