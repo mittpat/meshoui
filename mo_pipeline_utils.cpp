@@ -45,6 +45,27 @@ void moCreateDomePipeline(MoPipeline *pPipeline)
     moCreatePipeline(&info, pPipeline);
 }
 
+void moCreatePassthroughPipeline(MoPipeline *pPipeline)
+{
+    MoPipelineCreateInfo info = {};
+    std::vector<char> mo_passthrough_shader_vert_spv;
+    {
+        std::ifstream fileStream("passthrough.vert.spv", std::ifstream::binary);
+        mo_passthrough_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    std::vector<char> mo_passthrough_shader_frag_spv;
+    {
+        std::ifstream fileStream("passthrough.frag.spv", std::ifstream::binary);
+        mo_passthrough_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    info.pVertexShader = (std::uint32_t*)mo_passthrough_shader_vert_spv.data();
+    info.vertexShaderSize = mo_passthrough_shader_vert_spv.size();
+    info.pFragmentShader = (std::uint32_t*)mo_passthrough_shader_frag_spv.data();
+    info.fragmentShaderSize = mo_passthrough_shader_frag_spv.size();
+    info.flags = MO_PIPELINE_FEATURE_NONE;
+    moCreatePipeline(&info, pPipeline);
+}
+
 /*
 ------------------------------------------------------------------------------
 This software is available under 2 licenses -- choose whichever you prefer.

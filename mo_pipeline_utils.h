@@ -6,6 +6,8 @@ void moCreatePhongPipeline(MoPipeline *pPipeline);
 
 void moCreateDomePipeline(MoPipeline *pPipeline);
 
+void moCreatePassthroughPipeline(MoPipeline *pPipeline);
+
 /*
 ------------------------------------------------------------------------------
 This software is available under 2 licenses -- choose whichever you prefer.
