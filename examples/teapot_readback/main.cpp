@@ -158,36 +158,25 @@ int main(int argc, char** argv)
 
         // Frame begin
         VkSemaphore imageAcquiredSemaphore;
-        moBeginSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);
-        moBindPipeline(swapChain->frames[frameIndex].buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
-
+        moBeginSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);        
         {
             MoUniform uni = {};
             uni.light = light.model.w.xyz();
             uni.camera = camera.position;
             moUploadBuffer(device, pipelineLayout->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
         }
+        moBindPipeline(swapChain->frames[frameIndex].buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
         {
-            float4x4 view = inverse(camera.model());
-            view.w = float4(0,0,0,1);
-
             MoPushConstant pmv = {};
             pmv.projection = projection_matrix;
-            pmv.view = view;
-            {
-                pmv.model = identity;
-                vkCmdPushConstants(swapChain->frames[frameIndex].buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
-                moBindMaterial(swapChain->frames[frameIndex].buffer, domeMaterial, pipelineLayout->pipelineLayout);
-                moDrawMesh(swapChain->frames[frameIndex].buffer, sphereMesh);
-            }
+            pmv.view = inverse(camera.model());
+            pmv.view.w = float4(0,0,0,1); //no translation
+            pmv.model = identity;
+            moBindMaterial(swapChain->frames[frameIndex].buffer, domeMaterial, pipelineLayout->pipelineLayout);
+            vkCmdPushConstants(swapChain->frames[frameIndex].buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+            moDrawMesh(swapChain->frames[frameIndex].buffer, sphereMesh);
         }
         moBindPipeline(swapChain->frames[frameIndex].buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
-        {
-            MoUniform uni = {};
-            uni.light = light.model.w.xyz();
-            uni.camera = camera.model().w.xyz();
-            moUploadBuffer(device, pipelineLayout->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
-        }
         if (scene)
         {
             MoPushConstant pmv = {};
@@ -197,8 +186,8 @@ int main(int argc, char** argv)
             {
                 if (node->material && node->mesh)
                 {
-                    moBindMaterial(swapChain->frames[frameIndex].buffer, node->material, pipelineLayout->pipelineLayout);
                     pmv.model = model;
+                    moBindMaterial(swapChain->frames[frameIndex].buffer, node->material, pipelineLayout->pipelineLayout);
                     vkCmdPushConstants(swapChain->frames[frameIndex].buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
                     moDrawMesh(swapChain->frames[frameIndex].buffer, node->mesh);
                 }
