@@ -51,7 +51,7 @@ void moDestroyNode(MoNode node)
     delete node;
 }
 
-void moCreateScene(const char *filename, MoScene* pScene)
+void moCreateScene(MoCommandBuffer commandBuffer, const char *filename, MoScene* pScene)
 {
     MoScene scene = *pScene = new MoScene_T();
     *scene = {};
@@ -67,12 +67,12 @@ void moCreateScene(const char *filename, MoScene* pScene)
         {
             auto* material = aScene->mMaterials[materialIdx];
 
-            MoMaterialCreateInfo materialInfo = {};
+            MoMaterialCreateInfo info = {};
             std::vector<std::pair<const char*, float4*>> colorMappings =
-            {{std::array<const char*,3>{AI_MATKEY_COLOR_AMBIENT}[0], &materialInfo.colorAmbient},
-             {std::array<const char*,3>{AI_MATKEY_COLOR_DIFFUSE}[0], &materialInfo.colorDiffuse},
-             {std::array<const char*,3>{AI_MATKEY_COLOR_SPECULAR}[0], &materialInfo.colorSpecular},
-             {std::array<const char*,3>{AI_MATKEY_COLOR_EMISSIVE}[0], &materialInfo.colorEmissive}};
+            {{std::array<const char*,3>{AI_MATKEY_COLOR_AMBIENT}[0], &info.colorAmbient},
+             {std::array<const char*,3>{AI_MATKEY_COLOR_DIFFUSE}[0], &info.colorDiffuse},
+             {std::array<const char*,3>{AI_MATKEY_COLOR_SPECULAR}[0], &info.colorSpecular},
+             {std::array<const char*,3>{AI_MATKEY_COLOR_EMISSIVE}[0], &info.colorEmissive}};
             for (auto mapping : colorMappings)
             {
                 aiColor3D color(0.f,0.f,0.f);
@@ -81,11 +81,11 @@ void moCreateScene(const char *filename, MoScene* pScene)
             }
 
             std::vector<std::pair<aiTextureType, MoTextureInfo*>> textureMappings =
-            {{aiTextureType_AMBIENT, &materialInfo.textureAmbient},
-             {aiTextureType_DIFFUSE, &materialInfo.textureDiffuse},
-             {aiTextureType_SPECULAR, &materialInfo.textureSpecular},
-             {aiTextureType_EMISSIVE, &materialInfo.textureEmissive},
-             {aiTextureType_NORMALS, &materialInfo.textureNormal}};
+            {{aiTextureType_AMBIENT, &info.textureAmbient},
+             {aiTextureType_DIFFUSE, &info.textureDiffuse},
+             {aiTextureType_SPECULAR, &info.textureSpecular},
+             {aiTextureType_EMISSIVE, &info.textureEmissive},
+             {aiTextureType_NORMALS, &info.textureNormal}};
             for (auto mapping : textureMappings)
             {
                 aiString path;
@@ -100,7 +100,9 @@ void moCreateScene(const char *filename, MoScene* pScene)
                     }
                 }
             }
-            moCreateMaterial(&materialInfo, const_cast<MoMaterial*>(&scene->pMaterials[materialIdx]));
+            info.commandBuffer = commandBuffer.buffer;
+            info.commandPool = commandBuffer.pool;
+            moCreateMaterial(&info, const_cast<MoMaterial*>(&scene->pMaterials[materialIdx]));
         }
 
         carray_resize(&scene->pMeshes, &scene->meshCount, aScene->mNumMeshes);
@@ -147,16 +149,16 @@ void moCreateScene(const char *filename, MoScene* pScene)
                 if (mesh->mBitangents) { bitangents[vertexIndex] = float3((float*)&mesh->mBitangents[vertexIndex]); }
             }
 
-            MoMeshCreateInfo meshInfo = {};
-            meshInfo.indexCount = mesh->mNumFaces * 3;
-            meshInfo.pIndices = indices.data();
-            meshInfo.vertexCount = mesh->mNumVertices;
-            meshInfo.pVertices = vertices.data();
-            meshInfo.pTextureCoords = textureCoords.data();
-            meshInfo.pNormals = normals.data();
-            meshInfo.pTangents = tangents.data();
-            meshInfo.pBitangents = bitangents.data();
-            moCreateMesh(&meshInfo, const_cast<MoMesh*>(&scene->pMeshes[meshIdx]));
+            MoMeshCreateInfo info = {};
+            info.indexCount = mesh->mNumFaces * 3;
+            info.pIndices = indices.data();
+            info.vertexCount = mesh->mNumVertices;
+            info.pVertices = vertices.data();
+            info.pTextureCoords = textureCoords.data();
+            info.pNormals = normals.data();
+            info.pTangents = tangents.data();
+            info.pBitangents = bitangents.data();
+            moCreateMesh(&info, const_cast<MoMesh*>(&scene->pMeshes[meshIdx]));
         }
 
         moCreateNode(aScene, scene, aScene->mRootNode, const_cast<MoNode*>(&scene->root));

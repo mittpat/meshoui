@@ -3,13 +3,13 @@
 #include "mo_material.h"
 
 // create a default material
-void moCreateDefaultMaterial(MoMaterial* pMaterial);
+void moCreateDefaultMaterial(MoCommandBuffer commandBuffer, MoMaterial* pMaterial);
 
 // create a demo material
-void moCreateDemoMaterial(MoMaterial* pMaterial);
+void moCreateDemoMaterial(MoCommandBuffer commandBuffer, MoMaterial* pMaterial);
 
 // create a grid material
-void moCreateGridMaterial(MoMaterial* pMaterial);
+void moCreateGridMaterial(MoCommandBuffer commandBuffer, MoMaterial* pMaterial);
 
 /*
 ------------------------------------------------------------------------------

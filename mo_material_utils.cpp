@@ -1,16 +1,18 @@
 #include "mo_material_utils.h"
 
-void moCreateDefaultMaterial(MoMaterial *pMaterial)
+void moCreateDefaultMaterial(MoCommandBuffer commandBuffer, MoMaterial *pMaterial)
 {
     MoMaterialCreateInfo info = {};
     info.colorAmbient = { 0.1f, 0.1f, 0.1f, 1.0f };
     info.colorDiffuse = { 0.64f, 0.64f, 0.64f, 1.0f };
     info.colorSpecular = { 0.5f, 0.5f, 0.5f, 1.0f };
     info.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
+    info.commandBuffer = commandBuffer.buffer;
+    info.commandPool = commandBuffer.pool;
     moCreateMaterial(&info, pMaterial);
 }
 
-void moCreateDemoMaterial(MoMaterial *pMaterial)
+void moCreateDemoMaterial(MoCommandBuffer commandBuffer, MoMaterial *pMaterial)
 {
     const uint32_t diffuse[8*8] = {0xff1a07e3,0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,0xff6091f7,
                                    0xff6091f7,0xff1a07e3,0xff48f4fb,0xff66b21d,0xfff9fb00,0xffa91f6c,0xffb98ef1,0xffb07279,
@@ -28,10 +30,12 @@ void moCreateDemoMaterial(MoMaterial *pMaterial)
     info.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
     info.textureDiffuse.pData = (uint8_t*)diffuse;
     info.textureDiffuse.extent = { 8, 8 };
+    info.commandBuffer = commandBuffer.buffer;
+    info.commandPool = commandBuffer.pool;
     moCreateMaterial(&info, pMaterial);
 }
 
-void moCreateGridMaterial(MoMaterial *pMaterial)
+void moCreateGridMaterial(MoCommandBuffer commandBuffer, MoMaterial *pMaterial)
 {
     const uint32_t diffuse[8*8] = {0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
                                    0xffffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,0x00ffffff,
@@ -49,6 +53,8 @@ void moCreateGridMaterial(MoMaterial *pMaterial)
     info.colorEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
     info.textureDiffuse.pData = (uint8_t*)diffuse;
     info.textureDiffuse.extent = { 8, 8 };
+    info.commandBuffer = commandBuffer.buffer;
+    info.commandPool = commandBuffer.pool;
     moCreateMaterial(&info, pMaterial);
 }
 

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <vector>
 
-void moCreatePhongPipeline(MoPipeline *pPipeline)
+void moCreatePhongPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
 {
     MoPipelineCreateInfo info = {};
     info.flags = MO_PIPELINE_FEATURE_DEFAULT;
@@ -21,10 +21,12 @@ void moCreatePhongPipeline(MoPipeline *pPipeline)
     info.vertexShaderSize = mo_phong_shader_vert_spv.size();
     info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
     info.fragmentShaderSize = mo_phong_shader_frag_spv.size();
+    info.pipelineLayout = pipelineLayout;
+    info.renderPass = renderPass;
     moCreatePipeline(&info, pPipeline);
 }
 
-void moCreateDomePipeline(MoPipeline *pPipeline)
+void moCreateDomePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
 {
     MoPipelineCreateInfo info = {};
     std::vector<char> mo_dome_shader_vert_spv;
@@ -42,10 +44,12 @@ void moCreateDomePipeline(MoPipeline *pPipeline)
     info.pFragmentShader = (std::uint32_t*)mo_dome_shader_frag_spv.data();
     info.fragmentShaderSize = mo_dome_shader_frag_spv.size();
     info.flags = MO_PIPELINE_FEATURE_NONE;
+    info.pipelineLayout = pipelineLayout;
+    info.renderPass = renderPass;
     moCreatePipeline(&info, pPipeline);
 }
 
-void moCreatePassthroughPipeline(MoPipeline *pPipeline)
+void moCreatePassthroughPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
 {
     MoPipelineCreateInfo info = {};
     std::vector<char> mo_passthrough_shader_vert_spv;
@@ -63,6 +67,8 @@ void moCreatePassthroughPipeline(MoPipeline *pPipeline)
     info.pFragmentShader = (std::uint32_t*)mo_passthrough_shader_frag_spv.data();
     info.fragmentShaderSize = mo_passthrough_shader_frag_spv.size();
     info.flags = MO_PIPELINE_FEATURE_NONE;
+    info.pipelineLayout = pipelineLayout;
+    info.renderPass = renderPass;
     moCreatePipeline(&info, pPipeline);
 }
 

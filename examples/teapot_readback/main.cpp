@@ -55,25 +55,25 @@ int main(int argc, char** argv)
     {
         // Create Vulkan instance
         {
-            MoInstanceCreateInfo createInfo = {};
+            MoInstanceCreateInfo info = {};
 #ifndef NDEBUG
-            createInfo.debugReport = VK_TRUE;
-            createInfo.pDebugReportCallback = moVkDebugReport;
+            info.debugReport = VK_TRUE;
+            info.pDebugReportCallback = moVkDebugReport;
 #endif
-            createInfo.pCheckVkResultFn = moVkCheckResult;
-            moCreateInstance(&createInfo, &instance);
+            info.pCheckVkResultFn = moVkCheckResult;
+            moCreateInstance(&info, &instance);
         }
 
         projection_matrix = mul(correction_matrix, perspective_matrix(moDegreesToRadians(75.f), width / float(height), 0.1f, 1000.f, neg_z, zero_to_one));
 
         // Create device
         {
-            MoDeviceCreateInfo createInfo = {};
-            createInfo.instance = instance;
-            createInfo.requestColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-            createInfo.pSurfaceFormat = &surfaceFormat;
-            createInfo.pCheckVkResultFn = moVkCheckResult;
-            moCreateDevice(&createInfo, &device);
+            MoDeviceCreateInfo info = {};
+            info.instance = instance;
+            info.requestColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+            info.pSurfaceFormat = &surfaceFormat;
+            info.pCheckVkResultFn = moVkCheckResult;
+            moCreateDevice(&info, &device);
         }
 
         // Create SwapChain, RenderPass, Framebuffer, etc.
@@ -81,45 +81,48 @@ int main(int argc, char** argv)
             // offscreen
             surfaceFormat.format = VK_FORMAT_R8G8B8A8_UNORM;
 
-            MoSwapChainCreateInfo createInfo = {};
-            createInfo.device = device;
-            createInfo.surfaceFormat = surfaceFormat;
-            createInfo.extent = {(uint32_t)width, (uint32_t)height};
-            createInfo.vsync = VK_TRUE;
-            createInfo.offscreen = VK_TRUE;
-            createInfo.pCheckVkResultFn = moVkCheckResult;
-            moCreateSwapChain(&createInfo, &swapChain);
+            MoSwapChainCreateInfo info = {};
+            info.device = device;
+            info.surfaceFormat = surfaceFormat;
+            info.extent = {(uint32_t)width, (uint32_t)height};
+            info.vsync = VK_TRUE;
+            info.offscreen = VK_TRUE;
+            info.pCheckVkResultFn = moVkCheckResult;
+            moCreateSwapChain(&info, &swapChain);
         }
     }
 
     // Meshoui initialization
     {
-        MoInitInfo initInfo = {};
-        initInfo.instance = instance;
-        initInfo.physicalDevice = device->physicalDevice;
-        initInfo.device = device->device;
-        initInfo.queueFamily = device->queueFamily;
-        initInfo.queue = device->queue;
-        initInfo.descriptorPool = device->descriptorPool;
-        initInfo.pSwapChainSwapBuffers = swapChain->images;
-        initInfo.swapChainSwapBufferCount = MO_FRAME_COUNT;
-        initInfo.pSwapChainCommandBuffers = swapChain->frames;
-        initInfo.swapChainCommandBufferCount = MO_FRAME_COUNT;
-        initInfo.depthBuffer = swapChain->depthBuffer;
-        initInfo.swapChainKHR = swapChain->swapChainKHR;
-        initInfo.renderPass = swapChain->renderPass;
-        initInfo.extent = swapChain->extent;
-        initInfo.pCheckVkResultFn = device->pCheckVkResultFn;
-        moInit(&initInfo);
+        MoInitInfo info = {};
+        info.instance = instance;
+        info.physicalDevice = device->physicalDevice;
+        info.device = device->device;
+        info.queueFamily = device->queueFamily;
+        info.queue = device->queue;
+        info.descriptorPool = device->descriptorPool;
+        info.pSwapChainSwapBuffers = swapChain->images;
+        info.swapChainSwapBufferCount = MO_FRAME_COUNT;
+        info.pSwapChainCommandBuffers = swapChain->frames;
+        info.swapChainCommandBufferCount = MO_FRAME_COUNT;
+        info.depthBuffer = swapChain->depthBuffer;
+        info.swapChainKHR = swapChain->swapChainKHR;
+        info.renderPass = swapChain->renderPass;
+        info.extent = swapChain->extent;
+        info.pCheckVkResultFn = device->pCheckVkResultFn;
+        moGlobalInit(&info);
     }
 
+    MoPipelineLayout pipelineLayout;
+    moCreatePipelineLayout(&pipelineLayout);
+
     // Phong
-    MoPipeline phongPipeline;
-    moCreatePhongPipeline(&phongPipeline);
+    VkPipeline phongPipeline;
+    moCreatePhongPipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &phongPipeline);
 
     // Dome
-    MoPipeline domePipeline;
-    moCreateDomePipeline(&domePipeline);
+    VkPipeline domePipeline;
+    moCreateDomePipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &domePipeline);
 
     MoMesh sphereMesh;
     moCreateDemoSphere(&sphereMesh);
@@ -128,8 +131,10 @@ int main(int argc, char** argv)
         MoMaterialCreateInfo info = {};
         info.colorAmbient = { 0.4f, 0.5f, 0.75f, 1.0f };
         info.colorDiffuse = { 0.7f, 0.45f, 0.1f, 1.0f };
+        info.commandBuffer = swapChain->frames[frameIndex].buffer;
+        info.commandPool = swapChain->frames[frameIndex].pool;
         moCreateMaterial(&info, &domeMaterial);
-        moRegisterMaterial(domePipeline, domeMaterial);
+        moRegisterMaterial(pipelineLayout, domeMaterial);
     }
     MoCamera camera{"__default_camera", {0.f, 10.f, 30.f}, 0.f, 0.f};
     MoLight light{"__default_light", translation_matrix(float3{-300.f, 300.f, 150.f})};
@@ -143,10 +148,10 @@ int main(int argc, char** argv)
     {
         if (!fileToLoad.empty())
         {
-            moCreateScene(fileToLoad.c_str(), &scene);
+            moCreateScene(swapChain->frames[frameIndex], fileToLoad.c_str(), &scene);
             for (std::uint32_t i = 0; i < scene->materialCount; ++i)
             {
-                moRegisterMaterial(phongPipeline, scene->pMaterials[i]);
+                moRegisterMaterial(pipelineLayout, scene->pMaterials[i]);
             }
             fileToLoad = "";
         }
@@ -154,13 +159,13 @@ int main(int argc, char** argv)
         // Frame begin
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);
-        moBegin(frameIndex, domePipeline);
+        moBindPipeline(swapChain->frames[frameIndex].buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
 
         {
             MoUniform uni = {};
             uni.light = light.model.w.xyz();
             uni.camera = camera.position;
-            moUploadBuffer(device, domePipeline->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
+            moUploadBuffer(device, pipelineLayout->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
         }
         {
             float4x4 view = inverse(camera.model());
@@ -171,17 +176,17 @@ int main(int argc, char** argv)
             pmv.view = view;
             {
                 pmv.model = identity;
-                vkCmdPushConstants(swapChain->frames[frameIndex].buffer, domePipeline->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
-                moBindMaterial(domeMaterial, domePipeline->pipelineLayout);
-                moDrawMesh(sphereMesh);
+                vkCmdPushConstants(swapChain->frames[frameIndex].buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+                moBindMaterial(swapChain->frames[frameIndex].buffer, domeMaterial, pipelineLayout->pipelineLayout);
+                moDrawMesh(swapChain->frames[frameIndex].buffer, sphereMesh);
             }
         }
-        moBegin(frameIndex, phongPipeline);
+        moBindPipeline(swapChain->frames[frameIndex].buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
         {
             MoUniform uni = {};
             uni.light = light.model.w.xyz();
             uni.camera = camera.model().w.xyz();
-            moUploadBuffer(device, phongPipeline->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
+            moUploadBuffer(device, pipelineLayout->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
         }
         if (scene)
         {
@@ -192,10 +197,10 @@ int main(int argc, char** argv)
             {
                 if (node->material && node->mesh)
                 {
-                    moBindMaterial(node->material, phongPipeline->pipelineLayout);
+                    moBindMaterial(swapChain->frames[frameIndex].buffer, node->material, pipelineLayout->pipelineLayout);
                     pmv.model = model;
-                    vkCmdPushConstants(swapChain->frames[frameIndex].buffer, phongPipeline->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
-                    moDrawMesh(node->mesh);
+                    vkCmdPushConstants(swapChain->frames[frameIndex].buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+                    moDrawMesh(swapChain->frames[frameIndex].buffer, node->mesh);
                 }
                 for (std::uint32_t i = 0; i < node->nodeCount; ++i)
                 {
@@ -217,11 +222,14 @@ int main(int argc, char** argv)
     moDestroyScene(scene);
     moDestroyMaterial(domeMaterial);
     moDestroyMesh(sphereMesh);
-    moDestroyPipeline(domePipeline);
-    moDestroyPipeline(phongPipeline);
+    vkDestroyPipeline(device->device, domePipeline, VK_NULL_HANDLE);
+    domePipeline = VK_NULL_HANDLE;
+    vkDestroyPipeline(device->device, phongPipeline, VK_NULL_HANDLE);
+    phongPipeline = VK_NULL_HANDLE;
+    moDestroyPipelineLayout(pipelineLayout);
 
     // Cleanup
-    moShutdown();
+    moGlobalShutdown();
     moDestroySwapChain(device, swapChain);
     moDestroyDevice(device);
     moDestroyInstance(instance);

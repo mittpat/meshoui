@@ -41,22 +41,24 @@ typedef struct MoMaterialCreateInfo {
     linalg::aliases::float4 colorDiffuse;
     linalg::aliases::float4 colorSpecular;
     linalg::aliases::float4 colorEmissive;
-    MoTextureInfo  textureAmbient;
-    MoTextureInfo  textureDiffuse;
-    MoTextureInfo  textureNormal;
-    MoTextureInfo  textureSpecular;
-    MoTextureInfo  textureEmissive;
+    MoTextureInfo textureAmbient;
+    MoTextureInfo textureDiffuse;
+    MoTextureInfo textureNormal;
+    MoTextureInfo textureSpecular;
+    MoTextureInfo textureEmissive;
+    VkCommandPool commandPool;
+    VkCommandBuffer commandBuffer;
 } MoMaterialCreateInfo;
 
 // upload a new phong material to the GPU and return a handle
 void moCreateMaterial(const MoMaterialCreateInfo* pCreateInfo, MoMaterial* pMaterial);
-void moRegisterMaterial(MoPipeline pipeline, MoMaterial material);
+void moRegisterMaterial(MoPipelineLayout pipeline, MoMaterial material);
 
 // free a material
 void moDestroyMaterial(MoMaterial material);
 
 // bind a material
-void moBindMaterial(MoMaterial material, VkPipelineLayout pipelineLayout);
+void moBindMaterial(VkCommandBuffer commandBuffer, MoMaterial material, VkPipelineLayout pipelineLayout);
 
 /*
 ------------------------------------------------------------------------------

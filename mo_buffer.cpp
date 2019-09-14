@@ -4,9 +4,7 @@
 
 #include <cstring>
 
-extern MoDevice    g_Device;
-extern MoSwapChain g_SwapChain;
-extern uint32_t    g_FrameIndex;
+extern MoDevice g_Device;
 
 uint32_t moMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t type_bits)
 {

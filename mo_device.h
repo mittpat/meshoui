@@ -71,10 +71,10 @@ void moCreateDevice(MoDeviceCreateInfo* pCreateInfo, MoDevice* pDevice);
 void moDestroyDevice(MoDevice device);
 
 // set global handles and create default phong pipeline
-void moInit(MoInitInfo* pInfo);
+void moGlobalInit(MoInitInfo* pInfo);
 
 // free default phong pipeline and clear global handles
-void moShutdown();
+void moGlobalShutdown();
 
 /*
 ------------------------------------------------------------------------------

@@ -2,11 +2,11 @@
 
 #include "mo_pipeline.h"
 
-void moCreatePhongPipeline(MoPipeline *pPipeline);
+void moCreatePhongPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
 
-void moCreateDomePipeline(MoPipeline *pPipeline);
+void moCreateDomePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
 
-void moCreatePassthroughPipeline(MoPipeline *pPipeline);
+void moCreatePassthroughPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
 
 /*
 ------------------------------------------------------------------------------

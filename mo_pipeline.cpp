@@ -3,39 +3,18 @@
 #include "mo_swapchain.h"
 
 #include <cstring>
-#include <vector>
 
 using namespace linalg;
 using namespace linalg::aliases;
 
-extern MoDevice      g_Device;
-extern MoSwapChain   g_SwapChain;
-extern std::uint32_t g_FrameIndex;
+extern MoDevice g_Device;
 
-void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipeline)
+void moCreatePipelineLayout(MoPipelineLayout *pPipeline)
 {
-    MoPipeline pipeline = *pPipeline = new MoPipeline_T();
+    MoPipelineLayout pipeline = *pPipeline = new MoPipelineLayout_T();
     *pipeline = {};
 
     VkResult err;
-    VkShaderModule vert_module;
-    VkShaderModule frag_module;
-
-    // program bindings
-    {
-        VkShaderModuleCreateInfo vert_info = {};
-        vert_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        vert_info.codeSize = pCreateInfo->vertexShaderSize;
-        vert_info.pCode = pCreateInfo->pVertexShader;
-        err = vkCreateShaderModule(g_Device->device, &vert_info, VK_NULL_HANDLE, &vert_module);
-        g_Device->pCheckVkResultFn(err);
-        VkShaderModuleCreateInfo frag_info = {};
-        frag_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        frag_info.codeSize = pCreateInfo->fragmentShaderSize;
-        frag_info.pCode = pCreateInfo->pFragmentShader;
-        err = vkCreateShaderModule(g_Device->device, &frag_info, VK_NULL_HANDLE, &frag_module);
-        g_Device->pCheckVkResultFn(err);
-    }
 
     // uniform bindings
     {
@@ -109,17 +88,38 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
 
     {
         // model, view & projection
-        std::vector<VkPushConstantRange> push_constants;
-        push_constants.emplace_back(VkPushConstantRange{VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant)});
+        VkPushConstantRange push_constants[1] = {};
+        push_constants[0] = {VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant)};
         VkPipelineLayoutCreateInfo layout_info = {};
         layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         layout_info.setLayoutCount = countof(pipeline->descriptorSetLayout);
         layout_info.pSetLayouts = pipeline->descriptorSetLayout;
-        layout_info.pushConstantRangeCount = (uint32_t)push_constants.size();
-        layout_info.pPushConstantRanges = push_constants.data();
+        layout_info.pushConstantRangeCount = countof(push_constants);
+        layout_info.pPushConstantRanges = push_constants;
         err = vkCreatePipelineLayout(g_Device->device, &layout_info, VK_NULL_HANDLE, &pipeline->pipelineLayout);
         g_Device->pCheckVkResultFn(err);
     }
+}
+
+void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, VkPipeline *pPipeline)
+{
+    VkResult err;
+
+    VkShaderModule vert_module;
+    VkShaderModule frag_module;
+
+    VkShaderModuleCreateInfo vert_info = {};
+    vert_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    vert_info.codeSize = pCreateInfo->vertexShaderSize;
+    vert_info.pCode = pCreateInfo->pVertexShader;
+    err = vkCreateShaderModule(g_Device->device, &vert_info, VK_NULL_HANDLE, &vert_module);
+    g_Device->pCheckVkResultFn(err);
+    VkShaderModuleCreateInfo frag_info = {};
+    frag_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    frag_info.codeSize = pCreateInfo->fragmentShaderSize;
+    frag_info.pCode = pCreateInfo->pFragmentShader;
+    err = vkCreateShaderModule(g_Device->device, &frag_info, VK_NULL_HANDLE, &frag_module);
+    g_Device->pCheckVkResultFn(err);
 
     VkPipelineShaderStageCreateInfo stage[2] = {};
     stage[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -132,39 +132,29 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
     stage[1].pName = "main";
 
     VkVertexInputBindingDescription binding_desc[5] = {};
-    binding_desc[0].binding = 0;
-    binding_desc[0].stride = sizeof(float3);
-    binding_desc[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    binding_desc[1].binding = 1;
-    binding_desc[1].stride = sizeof(float2);
-    binding_desc[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    binding_desc[2].binding = 2;
-    binding_desc[2].stride = sizeof(float3);
-    binding_desc[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    binding_desc[3].binding = 3;
-    binding_desc[3].stride = sizeof(float3);
-    binding_desc[3].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    binding_desc[4].binding = 4;
-    binding_desc[4].stride = sizeof(float3);
-    binding_desc[4].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    binding_desc[0] = {0, sizeof(float3), VK_VERTEX_INPUT_RATE_VERTEX };
+    binding_desc[1] = {1, sizeof(float2), VK_VERTEX_INPUT_RATE_VERTEX };
+    binding_desc[2] = {2, sizeof(float3), VK_VERTEX_INPUT_RATE_VERTEX };
+    binding_desc[3] = {3, sizeof(float3), VK_VERTEX_INPUT_RATE_VERTEX };
+    binding_desc[4] = {4, sizeof(float3), VK_VERTEX_INPUT_RATE_VERTEX };
 
-    std::vector<VkVertexInputAttributeDescription> attribute_desc;
-    attribute_desc.emplace_back(VkVertexInputAttributeDescription{0, binding_desc[0].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 });
-    attribute_desc.emplace_back(VkVertexInputAttributeDescription{1, binding_desc[1].binding, VK_FORMAT_R32G32_SFLOAT,    0 });
-    attribute_desc.emplace_back(VkVertexInputAttributeDescription{2, binding_desc[2].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 });
-    attribute_desc.emplace_back(VkVertexInputAttributeDescription{3, binding_desc[3].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 });
-    attribute_desc.emplace_back(VkVertexInputAttributeDescription{4, binding_desc[4].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 });
+    VkVertexInputAttributeDescription attribute_desc[5] = {};
+    attribute_desc[0] = {0, binding_desc[0].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 };
+    attribute_desc[1] = {1, binding_desc[1].binding, VK_FORMAT_R32G32_SFLOAT,    0 };
+    attribute_desc[2] = {2, binding_desc[2].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 };
+    attribute_desc[3] = {3, binding_desc[3].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 };
+    attribute_desc[4] = {4, binding_desc[4].binding, VK_FORMAT_R32G32B32_SFLOAT, 0 };
 
     VkPipelineVertexInputStateCreateInfo vertex_info = {};
     vertex_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertex_info.vertexBindingDescriptionCount = countof(binding_desc);
     vertex_info.pVertexBindingDescriptions = binding_desc;
-    vertex_info.vertexAttributeDescriptionCount = (uint32_t)attribute_desc.size();
-    vertex_info.pVertexAttributeDescriptions = attribute_desc.data();
+    vertex_info.vertexAttributeDescriptionCount = countof(attribute_desc);
+    vertex_info.pVertexAttributeDescriptions = attribute_desc;
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
-    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkPipelineInputAssemblyStateCreateInfo assembly_info = {};
+    assembly_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    assembly_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
     VkPipelineViewportStateCreateInfo viewport_info = {};
     viewport_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -217,45 +207,41 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipe
     info.stageCount = 2;
     info.pStages = stage;
     info.pVertexInputState = &vertex_info;
-    info.pInputAssemblyState = &inputAssembly;
+    info.pInputAssemblyState = &assembly_info;
     info.pViewportState = &viewport_info;
     info.pRasterizationState = &raster_info;
     info.pMultisampleState = &ms_info;
     info.pDepthStencilState = &depth_info;
     info.pColorBlendState = &blend_info;
     info.pDynamicState = &dynamic_state;
-    info.layout = pipeline->pipelineLayout;
-    info.renderPass = g_SwapChain->renderPass;
-    err = vkCreateGraphicsPipelines(g_Device->device, VK_NULL_HANDLE, 1, &info, VK_NULL_HANDLE, &pipeline->pipeline);
+    info.layout = pCreateInfo->pipelineLayout;
+    info.renderPass = pCreateInfo->renderPass;
+    err = vkCreateGraphicsPipelines(g_Device->device, VK_NULL_HANDLE, 1, &info, VK_NULL_HANDLE, pPipeline);
     g_Device->pCheckVkResultFn(err);
 
     vkDestroyShaderModule(g_Device->device, frag_module, VK_NULL_HANDLE);
     vkDestroyShaderModule(g_Device->device, vert_module, VK_NULL_HANDLE);
 }
 
-void moDestroyPipeline(MoPipeline pipeline)
+void moDestroyPipelineLayout(MoPipelineLayout pipeline)
 {
     vkQueueWaitIdle(g_Device->queue);
     for (size_t i = 0; i < MO_FRAME_COUNT; ++i) { moDeleteBuffer(g_Device, pipeline->uniformBuffer[i]); }
     vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT], VK_NULL_HANDLE);
     vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT], VK_NULL_HANDLE);
     vkDestroyPipelineLayout(g_Device->device, pipeline->pipelineLayout, VK_NULL_HANDLE);
-    vkDestroyPipeline(g_Device->device, pipeline->pipeline, VK_NULL_HANDLE);
     pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT] = VK_NULL_HANDLE;
     pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT] = VK_NULL_HANDLE;
     pipeline->pipelineLayout = VK_NULL_HANDLE;
-    pipeline->pipeline = VK_NULL_HANDLE;
     memset(&pipeline->uniformBuffer, 0, sizeof(pipeline->uniformBuffer));
     memset(&pipeline->descriptorSet, 0, sizeof(pipeline->descriptorSet));
     delete pipeline;
 }
 
-void moBegin(uint32_t frameIndex, MoPipeline pipeline)
+void moBindPipeline(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet pipelineDescriptorSet)
 {
-    g_FrameIndex = frameIndex;
-    auto & frame = g_SwapChain->frames[g_FrameIndex];
-    vkCmdBindPipeline(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
-    vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout, 0, 1, &pipeline->descriptorSet[g_FrameIndex], 0, VK_NULL_HANDLE);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &pipelineDescriptorSet, 0, VK_NULL_HANDLE);
 }
 
 /*

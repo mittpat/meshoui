@@ -10,9 +10,7 @@
 using namespace linalg;
 using namespace linalg::aliases;
 
-extern MoDevice      g_Device;
-extern MoSwapChain   g_SwapChain;
-extern std::uint32_t g_FrameIndex;
+extern MoDevice g_Device;
 
 void generateTexture(MoImageBuffer *pImageBuffer, const MoTextureInfo &textureInfo, const float4 &fallbackColor, VkCommandPool commandPool, VkCommandBuffer commandBuffer)
 {
@@ -99,12 +97,11 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
     VkResult err = vkDeviceWaitIdle(g_Device->device);
     g_Device->pCheckVkResultFn(err);
 
-    auto & frame = g_SwapChain->frames[g_FrameIndex];
-    generateTexture(&material->ambientImage,  pCreateInfo->textureAmbient,  pCreateInfo->colorAmbient,  frame.pool, frame.buffer);
-    generateTexture(&material->diffuseImage,  pCreateInfo->textureDiffuse,  pCreateInfo->colorDiffuse,  frame.pool, frame.buffer);
-    generateTexture(&material->normalImage,   pCreateInfo->textureNormal,   {0.f, 0.f, 0.f, 0.f},       frame.pool, frame.buffer);
-    generateTexture(&material->emissiveImage, pCreateInfo->textureEmissive, pCreateInfo->colorEmissive, frame.pool, frame.buffer);
-    generateTexture(&material->specularImage, pCreateInfo->textureSpecular, pCreateInfo->colorSpecular, frame.pool, frame.buffer);
+    generateTexture(&material->ambientImage,  pCreateInfo->textureAmbient,  pCreateInfo->colorAmbient,  pCreateInfo->commandPool, pCreateInfo->commandBuffer);
+    generateTexture(&material->diffuseImage,  pCreateInfo->textureDiffuse,  pCreateInfo->colorDiffuse,  pCreateInfo->commandPool, pCreateInfo->commandBuffer);
+    generateTexture(&material->normalImage,   pCreateInfo->textureNormal,   {0.f, 0.f, 0.f, 0.f},       pCreateInfo->commandPool, pCreateInfo->commandBuffer);
+    generateTexture(&material->emissiveImage, pCreateInfo->textureEmissive, pCreateInfo->colorEmissive, pCreateInfo->commandPool, pCreateInfo->commandBuffer);
+    generateTexture(&material->specularImage, pCreateInfo->textureSpecular, pCreateInfo->colorSpecular, pCreateInfo->commandPool, pCreateInfo->commandBuffer);
 
     {
         VkSamplerCreateInfo info = {};
@@ -134,7 +131,7 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
     }
 }
 
-void moRegisterMaterial(MoPipeline pipeline, MoMaterial material)
+void moRegisterMaterial(MoPipelineLayout pipeline, MoMaterial material)
 {
     MoMaterialRegistration registration = {};
     registration.pipelineLayout = pipeline->pipelineLayout;
@@ -199,14 +196,13 @@ void moDestroyMaterial(MoMaterial material)
     delete material;
 }
 
-void moBindMaterial(MoMaterial material, VkPipelineLayout pipelineLayout)
+void moBindMaterial(VkCommandBuffer commandBuffer, MoMaterial material, VkPipelineLayout pipelineLayout)
 {
-    auto & frame = g_SwapChain->frames[g_FrameIndex];
     for (std::uint32_t i = 0; i < material->registrationCount; ++i)
     {
         if (material->pRegistrations[i].pipelineLayout == pipelineLayout)
         {
-            vkCmdBindDescriptorSets(frame.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material->pRegistrations[i].descriptorSet, 0, VK_NULL_HANDLE);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material->pRegistrations[i].descriptorSet, 0, VK_NULL_HANDLE);
             break;
         }
     }

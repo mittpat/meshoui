@@ -8,9 +8,7 @@
 using namespace linalg;
 using namespace linalg::aliases;
 
-extern MoDevice      g_Device;
-extern MoSwapChain   g_SwapChain;
-extern std::uint32_t g_FrameIndex;
+extern MoDevice g_Device;
 
 void moCreateMesh(const MoMeshCreateInfo *pCreateInfo, MoMesh *pMesh)
 {
@@ -46,10 +44,8 @@ void moDestroyMesh(MoMesh mesh)
     delete mesh;
 }
 
-void moDrawMesh(MoMesh mesh)
+void moDrawMesh(VkCommandBuffer commandBuffer, MoMesh mesh)
 {
-    auto & frame = g_SwapChain->frames[g_FrameIndex];
-
     VkBuffer vertexBuffers[] = {mesh->verticesBuffer->buffer,
                                 mesh->textureCoordsBuffer->buffer,
                                 mesh->normalsBuffer->buffer,
@@ -60,10 +56,10 @@ void moDrawMesh(MoMesh mesh)
                               0,
                               0,
                               0};
-    vkCmdBindVertexBuffers(frame.buffer, 0, 5, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(frame.buffer, mesh->indexBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(commandBuffer, 0, 5, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, mesh->indexBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdDrawIndexed(frame.buffer, mesh->indexBufferSize, 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, mesh->indexBufferSize, 1, 0, 0, 0);
 }
 
 /*

@@ -6,11 +6,10 @@
 #include <cstring>
 #include <vector>
 
-VkDebugReportCallbackEXT  g_DebugReport     = VK_NULL_HANDLE;
-MoDevice                  g_Device          = VK_NULL_HANDLE;
-VkInstance                g_Instance        = VK_NULL_HANDLE;
-MoSwapChain               g_SwapChain       = VK_NULL_HANDLE;
-std::uint32_t             g_FrameIndex      = 0;
+VkDebugReportCallbackEXT g_DebugReport     = VK_NULL_HANDLE;
+MoDevice                 g_Device          = VK_NULL_HANDLE;
+VkInstance               g_Instance        = VK_NULL_HANDLE;
+MoSwapChain              g_SwapChain       = VK_NULL_HANDLE;
 
 void moCreateInstance(MoInstanceCreateInfo *pCreateInfo, VkInstance *pInstance)
 {
@@ -208,7 +207,7 @@ void moDestroyDevice(MoDevice device)
     delete device;
 }
 
-void moInit(MoInitInfo *pInfo)
+void moGlobalInit(MoInitInfo *pInfo)
 {
     g_Instance = pInfo->instance;
     g_Device = new MoDevice_T;
@@ -243,7 +242,7 @@ void moInit(MoInitInfo *pInfo)
     }
 }
 
-void moShutdown()
+void moGlobalShutdown()
 {
     g_Instance = VK_NULL_HANDLE;
     g_Device->physicalDevice = VK_NULL_HANDLE;

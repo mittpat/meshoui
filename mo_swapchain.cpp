@@ -496,9 +496,6 @@ VkResult moEndSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphor
 
         err = vkResetFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence);
         g_Device->pCheckVkResultFn(err);
-
-        *pFrameIndex += 1;
-        *pFrameIndex %= MO_FRAME_COUNT;
     }
     else
     {

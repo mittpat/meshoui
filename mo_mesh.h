@@ -33,7 +33,7 @@ void moCreateMesh(const MoMeshCreateInfo* pCreateInfo, MoMesh* pMesh);
 void moDestroyMesh(MoMesh mesh);
 
 // draw a mesh
-void moDrawMesh(MoMesh mesh);
+void moDrawMesh(VkCommandBuffer commandBuffer, MoMesh mesh);
 
 /*
 ------------------------------------------------------------------------------

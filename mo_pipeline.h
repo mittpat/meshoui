@@ -9,14 +9,13 @@
 #define MO_MATERIAL_DESC_LAYOUT 1
 #define MO_COUNT_DESC_LAYOUT MO_MATERIAL_DESC_LAYOUT+1
 
-typedef struct MoPipeline_T {
+typedef struct MoPipelineLayout_T {
     VkPipelineLayout pipelineLayout;
-    VkPipeline pipeline;
     VkDescriptorSetLayout descriptorSetLayout[MO_COUNT_DESC_LAYOUT];
     // the buffers bound to this descriptor set may change frame to frame, one set per frame
     VkDescriptorSet descriptorSet[MO_FRAME_COUNT];
     MoDeviceBuffer  uniformBuffer[MO_FRAME_COUNT];
-}* MoPipeline;
+}* MoPipelineLayout;
 
 typedef enum MoPipelineFeature {
     MO_PIPELINE_FEATURE_NONE             = 0,
@@ -33,17 +32,20 @@ typedef struct MoPipelineCreateInfo {
     uint32_t              vertexShaderSize;
     const uint32_t*       pFragmentShader;
     uint32_t              fragmentShaderSize;
+    VkPipelineLayout      pipelineLayout;
+    VkRenderPass          renderPass;
     MoPipelineCreateFlags flags;
 } MoPipelineCreateInfo;
 
-// use this function to create a different pipeline than the default
-void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, MoPipeline *pPipeline);
+//create a pipeline
+void moCreatePipelineLayout(MoPipelineLayout *pPipeline);
+void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, VkPipeline *pPipeline);
 
-// destroy a pipeline other than the default
-void moDestroyPipeline(MoPipeline pipeline);
+// destroy a pipeline
+void moDestroyPipelineLayout(MoPipelineLayout pipeline);
 
-// start a new frame against the current pipeline
-void moBegin(uint32_t frameIndex, MoPipeline pipeline);
+// start a new frame against the given pipeline
+void moBindPipeline(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet pipelineDescriptorSet);
 
 /*
 ------------------------------------------------------------------------------

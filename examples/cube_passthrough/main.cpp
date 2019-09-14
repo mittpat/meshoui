@@ -39,14 +39,14 @@ int main(int argc, char** argv)
 
         // Create Vulkan instance
         {
-            MoInstanceCreateInfo createInfo = {};
-            createInfo.pExtensions = glfwGetRequiredInstanceExtensions(&createInfo.extensionsCount);
+            MoInstanceCreateInfo info = {};
+            info.pExtensions = glfwGetRequiredInstanceExtensions(&info.extensionsCount);
 #ifndef NDEBUG
-            createInfo.debugReport = VK_TRUE;
-            createInfo.pDebugReportCallback = moVkDebugReport;
+            info.debugReport = VK_TRUE;
+            info.pDebugReportCallback = moVkDebugReport;
 #endif
-            createInfo.pCheckVkResultFn = moVkCheckResult;
-            moCreateInstance(&createInfo, &instance);
+            info.pCheckVkResultFn = moVkCheckResult;
+            moCreateInstance(&info, &instance);
         }
 
         // Create Window Surface
@@ -64,28 +64,28 @@ int main(int argc, char** argv)
 
         // Create device
         {
-            MoDeviceCreateInfo createInfo = {};
-            createInfo.instance = instance;
-            createInfo.surface = surface;
+            MoDeviceCreateInfo info = {};
+            info.instance = instance;
+            info.surface = surface;
             VkFormat requestFormats[4] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-            createInfo.pRequestFormats = requestFormats;
-            createInfo.requestFormatsCount = 4;
-            createInfo.requestColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-            createInfo.pSurfaceFormat = &surfaceFormat;
-            createInfo.pCheckVkResultFn = moVkCheckResult;
-            moCreateDevice(&createInfo, &device);
+            info.pRequestFormats = requestFormats;
+            info.requestFormatsCount = 4;
+            info.requestColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+            info.pSurfaceFormat = &surfaceFormat;
+            info.pCheckVkResultFn = moVkCheckResult;
+            moCreateDevice(&info, &device);
         }
 
         // Create SwapChain, RenderPass, Framebuffer, etc.
         {
-            MoSwapChainCreateInfo createInfo = {};
-            createInfo.device = device;
-            createInfo.surface = surface;
-            createInfo.surfaceFormat = surfaceFormat;
-            createInfo.extent = {(uint32_t)width, (uint32_t)height};
-            createInfo.vsync = VK_TRUE;
-            createInfo.pCheckVkResultFn = moVkCheckResult;
-            moCreateSwapChain(&createInfo, &swapChain);
+            MoSwapChainCreateInfo info = {};
+            info.device = device;
+            info.surface = surface;
+            info.surfaceFormat = surfaceFormat;
+            info.extent = {(uint32_t)width, (uint32_t)height};
+            info.vsync = VK_TRUE;
+            info.pCheckVkResultFn = moVkCheckResult;
+            moCreateSwapChain(&info, &swapChain);
         }
     }
 
@@ -107,12 +107,15 @@ int main(int argc, char** argv)
         info.renderPass = swapChain->renderPass;
         info.extent = swapChain->extent;
         info.pCheckVkResultFn = device->pCheckVkResultFn;
-        moInit(&info);
+        moGlobalInit(&info);
     }
 
+    MoPipelineLayout pipelineLayout;
+    moCreatePipelineLayout(&pipelineLayout);
+
     // Passthrough
-    MoPipeline passthroughPipeline;
-    moCreatePassthroughPipeline(&passthroughPipeline);
+    VkPipeline passthroughPipeline;
+    moCreatePassthroughPipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &passthroughPipeline);
 
     MoMesh cubeMesh;
     moCreateDemoCube(&cubeMesh, float3(0.5,0.5,0.5));
@@ -125,8 +128,8 @@ int main(int argc, char** argv)
         // Frame begin
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);
-        moBegin(frameIndex, passthroughPipeline);
-        moDrawMesh(cubeMesh);
+        moBindPipeline(swapChain->frames[frameIndex].buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
+        moDrawMesh(swapChain->frames[frameIndex].buffer, cubeMesh);
 
         // Frame end
         VkResult err = moEndSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);
@@ -154,10 +157,12 @@ int main(int argc, char** argv)
 
     // Meshoui cleanup
     moDestroyMesh(cubeMesh);
-    moDestroyPipeline(passthroughPipeline);
+    vkDestroyPipeline(device->device, passthroughPipeline, VK_NULL_HANDLE);
+    passthroughPipeline = VK_NULL_HANDLE;
+    moDestroyPipelineLayout(pipelineLayout);
 
     // Cleanup
-    moShutdown();
+    moGlobalShutdown();
     moDestroySwapChain(device, swapChain);
     vkDestroySurfaceKHR(instance, surface, VK_NULL_HANDLE);
     moDestroyDevice(device);
