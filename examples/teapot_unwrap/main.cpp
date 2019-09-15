@@ -96,6 +96,11 @@ int main(int argc, char** argv)
     VkPipeline passthroughPipeline;
     moCreateUnwrapPipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &passthroughPipeline);
 
+    // Blur
+    MoRenderbuffer renderBuffer;
+    moCreateRenderbuffer(&renderBuffer);
+    moRegisterRenderbuffer(swapChain, pipelineLayout, renderBuffer);
+
     MoScene scene;
     moCreateScene(swapChain->frames[0], "resources/teapot.dae", &scene);
     for (std::uint32_t i = 0; i < scene->materialCount; ++i)
@@ -113,6 +118,7 @@ int main(int argc, char** argv)
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
         moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindRenderbuffer(currentCommandBuffer.buffer, renderBuffer, pipelineLayout->pipelineLayout, swapChain->frameIndex);
 
         if (scene)
         {
@@ -150,6 +156,7 @@ int main(int argc, char** argv)
             recreateInfo.extent = {(uint32_t)width, (uint32_t)height};
             recreateInfo.vsync = VK_TRUE;
             moRecreateSwapChain(&recreateInfo, swapChain);
+            moReregisterRenderbuffer(swapChain, renderBuffer);
             err = VK_SUCCESS;
         }
         moVkCheckResult(err);
@@ -157,6 +164,7 @@ int main(int argc, char** argv)
 
     // Meshoui cleanup
     moDestroyScene(scene);
+    moDestroyRenderbuffer(renderBuffer);
     vkDestroyPipeline(device->device, passthroughPipeline, VK_NULL_HANDLE);
     passthroughPipeline = VK_NULL_HANDLE;
     moDestroyPipelineLayout(pipelineLayout);

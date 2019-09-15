@@ -11,8 +11,12 @@ void main()
 
 #ifdef COMPILING_FRAGMENT
 layout(location = 0) out vec4 fragment;
+layout(set = 2, binding = 0) uniform sampler2D uniformPreviousFramebuffer;
 void main()
 {
-    fragment = vec4(gl_FragCoord.xy / 512, 0, 1);
+    vec4 previousFramebuffer = texture(uniformPreviousFramebuffer, gl_FragCoord.xy / textureSize(uniformPreviousFramebuffer, 0));
+    vec4 currentFramebuffer = vec4(1);
+    fragment = previousFramebuffer * 254/255.0 + currentFramebuffer * 2/255.0;
+    fragment = clamp(fragment, vec4(0,0,0,1), currentFramebuffer);
 }
 #endif
