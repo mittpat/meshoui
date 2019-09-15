@@ -12,6 +12,6 @@ void main()
 layout(location = 0) out vec4 fragment;
 void main()
 {
-    fragment = vec4(1);
+    fragment = vec4(gl_FragCoord.xy / 1000, 0, 1);
 }
 #endif

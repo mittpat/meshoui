@@ -1,5 +1,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <examples/imgui_impl_glfw.h>
+#include <examples/imgui_impl_vulkan.h>
 
 #include "mo_device.h"
 #include "mo_example_utils.h"
@@ -9,11 +12,114 @@
 #include "mo_pipeline_utils.h"
 #include "mo_swapchain.h"
 
+#include <algorithm>
 #include <experimental/filesystem>
 
 namespace std { namespace filesystem = experimental::filesystem; }
 using namespace linalg;
 using namespace linalg::aliases;
+
+void moGUIInit(GLFWwindow *pWindow, VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkQueue queue, ImGui_ImplVulkan_InitInfo *pInfo)
+{
+    // IMGUI initialization
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForVulkan(pWindow, true);
+    ImGui_ImplVulkan_Init(pInfo, renderPass);
+
+    ImGui::StyleColorsDark();
+
+    VkResult err = vkResetCommandPool(device, commandPool, 0);
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    err = vkBeginCommandBuffer(commandBuffer, &begin_info);
+
+    ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+
+    VkSubmitInfo end_info = {};
+    end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    end_info.commandBufferCount = 1;
+    end_info.pCommandBuffers = &commandBuffer;
+    err = vkEndCommandBuffer(commandBuffer);
+    err = vkQueueSubmit(queue, 1, &end_info, VK_NULL_HANDLE);
+
+    err = vkDeviceWaitIdle(device);
+    ImGui_ImplVulkan_DestroyFontUploadObjects();
+}
+
+void moGUIDrawBegin()
+{
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+
+    ImGui::NewFrame();
+}
+
+bool moGUIFileBrowser(std::experimental::filesystem::path *pCurrentDirectory, std::experimental::filesystem::path *pFileToLoad, const std::vector<std::string>& allowedExtensions = {})
+{
+    if (!std::filesystem::equivalent(*pCurrentDirectory, *pCurrentDirectory / ".."))
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(6/7.0f, 0.6f, 0.6f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(6/7.0f, 0.7f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(6/7.0f, 0.8f, 0.8f));
+        if (ImGui::Button(".."))
+        {
+            *pCurrentDirectory = std::filesystem::canonical(*pCurrentDirectory / "..");
+        }
+        ImGui::PopStyleColor(3);
+    }
+    std::vector<std::filesystem::path> paths;
+    std::filesystem::directory_iterator position(*pCurrentDirectory);
+    paths.insert(paths.end(), std::filesystem::begin(position), std::filesystem::end(position));
+    std::sort(paths.begin(), paths.end(), [](const std::filesystem::path & a, const std::filesystem::path & b)
+    {
+        if (std::filesystem::is_directory(a) && !std::filesystem::is_directory(b))
+            return true;
+        if (!std::filesystem::is_directory(a) && std::filesystem::is_directory(b))
+            return false;
+        return a < b;
+    });
+    for (auto & p: paths)
+    {
+        if (p.filename().c_str()[0] != '.')
+        {
+            if (std::filesystem::is_directory(p))
+            {
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(5/7.0f, 0.6f, 0.6f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(5/7.0f, 0.7f, 0.7f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(5/7.0f, 0.8f, 0.8f));
+                if (ImGui::Button(p.filename().c_str()))
+                {
+                    *pCurrentDirectory = std::filesystem::canonical(p);
+                }
+                ImGui::PopStyleColor(3);
+            }
+            else if (allowedExtensions.empty() || std::find(allowedExtensions.begin(), allowedExtensions.end(), p.extension()) != allowedExtensions.end())
+            {
+                if (ImGui::Button(p.filename().c_str()))
+                {
+                    *pFileToLoad = std::filesystem::canonical(p);
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+void moGUIDrawEnd(VkCommandBuffer commandBuffer)
+{
+    ImGui::Render();
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+}
+
+void moGUIShutdown()
+{
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
 
 int main(int argc, char** argv)
 {
@@ -88,6 +194,26 @@ int main(int argc, char** argv)
         }
     }
 
+    // ImGui initialization
+    {
+        ImGui_ImplVulkan_InitInfo init_info = {};
+        init_info.Instance = instance;
+        init_info.PhysicalDevice = device->physicalDevice;
+        init_info.Device = device->device;
+        init_info.QueueFamily = device->queueFamily;
+        init_info.Queue = device->queue;
+        init_info.DescriptorPool = device->descriptorPool;
+        init_info.MinImageCount = 2;
+        init_info.ImageCount = 2;
+        init_info.CheckVkResultFn = device->pCheckVkResultFn;
+
+        // Use any command queue
+        VkCommandPool commandPool = swapChain->frames[0].pool;
+        VkCommandBuffer commandBuffer = swapChain->frames[0].buffer;
+
+        moGUIInit(window, device->device, swapChain->renderPass, commandPool, commandBuffer, device->queue, &init_info);
+    }
+
     MoPipelineLayout pipelineLayout;
     moCreatePipelineLayout(&pipelineLayout);
 
@@ -97,6 +223,9 @@ int main(int argc, char** argv)
 
     MoMesh cubeMesh;
     moCreateDemoCube(&cubeMesh, float3(0.5,0.5,0.5));
+
+    std::filesystem::path currentDirectory = std::filesystem::path(argv[0]).parent_path();
+    std::filesystem::path selectedFile;
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -109,6 +238,17 @@ int main(int argc, char** argv)
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
         moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
         moDrawMesh(currentCommandBuffer.buffer, cubeMesh);
+
+        // ImGui
+        moGUIDrawBegin();
+        ImGui::Begin(std::filesystem::path(argv[0]).stem().c_str());
+        ImGui::Text("DearImGui is great!");
+        ImGui::Text("Selected: %s", selectedFile.c_str());
+        ImGui::End();
+        ImGui::Begin("Select File");
+        moGUIFileBrowser(&currentDirectory, &selectedFile);
+        ImGui::End();
+        moGUIDrawEnd(currentCommandBuffer.buffer);
 
         // Frame end
         VkResult err = moEndSwapChain(swapChain, &imageAcquiredSemaphore);
@@ -139,6 +279,9 @@ int main(int argc, char** argv)
     vkDestroyPipeline(device->device, passthroughPipeline, VK_NULL_HANDLE);
     passthroughPipeline = VK_NULL_HANDLE;
     moDestroyPipelineLayout(pipelineLayout);
+
+    // ImGui cleanup
+    moGUIShutdown();
 
     // Cleanup
     moDestroySwapChain(device, swapChain);

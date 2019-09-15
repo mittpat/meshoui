@@ -157,7 +157,6 @@ int main(int argc, char** argv)
     MoSwapChain                  swapChain = VK_NULL_HANDLE;
     VkSurfaceKHR                 surface = VK_NULL_HANDLE;
     VkSurfaceFormatKHR           surfaceFormat = {};
-    uint32_t                     frameIndex = 0;
 
     MoInputs                     inputs = {};
 
@@ -243,27 +242,6 @@ int main(int argc, char** argv)
         }
     }
 
-    // Meshoui initialization
-    {
-        MoInitInfo info = {};
-        info.instance = instance;
-        info.physicalDevice = device->physicalDevice;
-        info.device = device->device;
-        info.queueFamily = device->queueFamily;
-        info.queue = device->queue;
-        info.descriptorPool = device->descriptorPool;
-        info.pSwapChainSwapBuffers = swapChain->images;
-        info.swapChainSwapBufferCount = MO_FRAME_COUNT;
-        info.pSwapChainCommandBuffers = swapChain->frames;
-        info.swapChainCommandBufferCount = MO_FRAME_COUNT;
-        info.depthBuffer = swapChain->depthBuffer;
-        info.swapChainKHR = swapChain->swapChainKHR;
-        info.renderPass = swapChain->renderPass;
-        info.extent = swapChain->extent;
-        info.pCheckVkResultFn = device->pCheckVkResultFn;
-        moGlobalInit(&info);
-    }
-
     MoPipelineLayout pipelineLayout;
     moCreatePipelineLayout(&pipelineLayout);
 
@@ -282,8 +260,8 @@ int main(int argc, char** argv)
         MoMaterialCreateInfo info = {};
         info.colorAmbient = { 0.4f, 0.5f, 0.75f, 1.0f };
         info.colorDiffuse = { 0.7f, 0.45f, 0.1f, 1.0f };
-        info.commandBuffer = swapChain->frames[frameIndex].buffer;
-        info.commandPool = swapChain->frames[frameIndex].pool;
+        info.commandBuffer = swapChain->frames[0].buffer;
+        info.commandPool = swapChain->frames[0].pool;
         moCreateMaterial(&info, &domeMaterial);
         moRegisterMaterial(pipelineLayout, domeMaterial);
     }
@@ -301,7 +279,7 @@ int main(int argc, char** argv)
 
         if (!fileToLoad.empty())
         {
-            moCreateScene(swapChain->frames[frameIndex], fileToLoad.c_str(), &scene);
+            moCreateScene(swapChain->frames[0], fileToLoad.c_str(), &scene);
             for (std::uint32_t i = 0; i < scene->materialCount; ++i)
             {
                 moRegisterMaterial(pipelineLayout, scene->pMaterials[i]);
@@ -328,26 +306,27 @@ int main(int argc, char** argv)
         }
 
         // Frame begin
+        MoCommandBuffer currentCommandBuffer;
         VkSemaphore imageAcquiredSemaphore;
-        moBeginSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);        
+        moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
         {
             MoUniform uni = {};
             uni.light = light.model.w.xyz();
             uni.camera = camera.position;
-            moUploadBuffer(device, pipelineLayout->uniformBuffer[frameIndex], sizeof(MoUniform), &uni);
+            moUploadBuffer(pipelineLayout->uniformBuffer[swapChain->frameIndex], sizeof(MoUniform), &uni);
         }
-        moBindPipeline(swapChain->frames[frameIndex].buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
         {
             MoPushConstant pmv = {};
             pmv.projection = projection_matrix;
             pmv.view = inverse(camera.model());
             pmv.view.w = float4(0,0,0,1); //no translation
             pmv.model = identity;
-            moBindMaterial(swapChain->frames[frameIndex].buffer, domeMaterial, pipelineLayout->pipelineLayout);
-            vkCmdPushConstants(swapChain->frames[frameIndex].buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
-            moDrawMesh(swapChain->frames[frameIndex].buffer, sphereMesh);
+            moBindMaterial(currentCommandBuffer.buffer, domeMaterial, pipelineLayout->pipelineLayout);
+            vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+            moDrawMesh(currentCommandBuffer.buffer, sphereMesh);
         }
-        moBindPipeline(swapChain->frames[frameIndex].buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
         if (scene)
         {
             MoPushConstant pmv = {};
@@ -358,9 +337,9 @@ int main(int argc, char** argv)
                 if (node->material && node->mesh)
                 {
                     pmv.model = model;
-                    moBindMaterial(swapChain->frames[frameIndex].buffer, node->material, pipelineLayout->pipelineLayout);
-                    vkCmdPushConstants(swapChain->frames[frameIndex].buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
-                    moDrawMesh(swapChain->frames[frameIndex].buffer, node->mesh);
+                    moBindMaterial(currentCommandBuffer.buffer, node->material, pipelineLayout->pipelineLayout);
+                    vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+                    moDrawMesh(currentCommandBuffer.buffer, node->mesh);
                 }
                 for (std::uint32_t i = 0; i < node->nodeCount; ++i)
                 {
@@ -371,7 +350,7 @@ int main(int argc, char** argv)
         }
 
         // Frame end
-        VkResult err = moEndSwapChain(swapChain, &frameIndex, &imageAcquiredSemaphore);
+        VkResult err = moEndSwapChain(swapChain, &imageAcquiredSemaphore);
         if (err == VK_ERROR_OUT_OF_DATE_KHR)
         {
             int width = 0, height = 0;
@@ -407,7 +386,6 @@ int main(int argc, char** argv)
     moDestroyPipelineLayout(pipelineLayout);
 
     // Cleanup
-    moGlobalShutdown();
     moDestroySwapChain(device, swapChain);
     vkDestroySurfaceKHR(instance, surface, VK_NULL_HANDLE);
     moDestroyDevice(device);

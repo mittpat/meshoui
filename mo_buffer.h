@@ -44,19 +44,19 @@ typedef struct MoUniform {
     alignas(16) linalg::aliases::float3 light;
 } MoUniform;
 
-uint32_t moMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t type_bits);
+uint32_t moMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits);
 
-void moCreateBuffer(MoDevice device, MoDeviceBuffer *pDeviceBuffer, VkDeviceSize size, VkBufferUsageFlags usage);
+void moCreateBuffer(MoDeviceBuffer *pDeviceBuffer, VkDeviceSize size, VkBufferUsageFlags usage);
 
-void moUploadBuffer(MoDevice device, MoDeviceBuffer deviceBuffer, VkDeviceSize dataSize, const void *pData);
+void moUploadBuffer(MoDeviceBuffer deviceBuffer, VkDeviceSize dataSize, const void *pData);
 
-void moDeleteBuffer(MoDevice device, MoDeviceBuffer deviceBuffer);
+void moDeleteBuffer(MoDeviceBuffer deviceBuffer);
 
-void moCreateBuffer(MoDevice device, MoImageBuffer *pImageBuffer, const VkExtent3D & extent, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectMask);
+void moCreateBuffer(MoImageBuffer *pImageBuffer, const VkExtent3D &extent, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectMask);
 
 void moTransferBuffer(VkCommandBuffer commandBuffer, MoDeviceBuffer fromBuffer, MoImageBuffer toBuffer, const VkExtent3D & extent);
 
-void moDeleteBuffer(MoDevice device, MoImageBuffer imageBuffer);
+void moDeleteBuffer(MoImageBuffer imageBuffer);
 
 template <typename T, size_t N> std::uint32_t countof(T (& arr)[N]) { return std::uint32_t(std::extent<T[N]>::value); }
 

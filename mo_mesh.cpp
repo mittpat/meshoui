@@ -18,29 +18,29 @@ void moCreateMesh(const MoMeshCreateInfo *pCreateInfo, MoMesh *pMesh)
     mesh->indexBufferSize = pCreateInfo->indexCount;
     mesh->vertexCount = pCreateInfo->vertexCount;
     const VkDeviceSize index_size = pCreateInfo->indexCount * sizeof(uint32_t);
-    moCreateBuffer(g_Device, &mesh->verticesBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    moCreateBuffer(g_Device, &mesh->textureCoordsBuffer, pCreateInfo->vertexCount * sizeof(float2), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    moCreateBuffer(g_Device, &mesh->normalsBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    moCreateBuffer(g_Device, &mesh->tangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    moCreateBuffer(g_Device, &mesh->bitangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    moCreateBuffer(g_Device, &mesh->indexBuffer, index_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    moUploadBuffer(g_Device, mesh->verticesBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pVertices);
-    moUploadBuffer(g_Device, mesh->textureCoordsBuffer, pCreateInfo->vertexCount * sizeof(float2), pCreateInfo->pTextureCoords);
-    moUploadBuffer(g_Device, mesh->normalsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pNormals);
-    moUploadBuffer(g_Device, mesh->tangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pTangents);
-    moUploadBuffer(g_Device, mesh->bitangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pBitangents);
-    moUploadBuffer(g_Device, mesh->indexBuffer, index_size, pCreateInfo->pIndices);
+    moCreateBuffer(&mesh->verticesBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    moCreateBuffer(&mesh->textureCoordsBuffer, pCreateInfo->vertexCount * sizeof(float2), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    moCreateBuffer(&mesh->normalsBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    moCreateBuffer(&mesh->tangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    moCreateBuffer(&mesh->bitangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    moCreateBuffer(&mesh->indexBuffer, index_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    moUploadBuffer(mesh->verticesBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pVertices);
+    moUploadBuffer(mesh->textureCoordsBuffer, pCreateInfo->vertexCount * sizeof(float2), pCreateInfo->pTextureCoords);
+    moUploadBuffer(mesh->normalsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pNormals);
+    moUploadBuffer(mesh->tangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pTangents);
+    moUploadBuffer(mesh->bitangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pBitangents);
+    moUploadBuffer(mesh->indexBuffer, index_size, pCreateInfo->pIndices);
 }
 
 void moDestroyMesh(MoMesh mesh)
 {
     vkQueueWaitIdle(g_Device->queue);
-    moDeleteBuffer(g_Device, mesh->verticesBuffer);
-    moDeleteBuffer(g_Device, mesh->textureCoordsBuffer);
-    moDeleteBuffer(g_Device, mesh->normalsBuffer);
-    moDeleteBuffer(g_Device, mesh->tangentsBuffer);
-    moDeleteBuffer(g_Device, mesh->bitangentsBuffer);
-    moDeleteBuffer(g_Device, mesh->indexBuffer);
+    moDeleteBuffer(mesh->verticesBuffer);
+    moDeleteBuffer(mesh->textureCoordsBuffer);
+    moDeleteBuffer(mesh->normalsBuffer);
+    moDeleteBuffer(mesh->tangentsBuffer);
+    moDeleteBuffer(mesh->bitangentsBuffer);
+    moDeleteBuffer(mesh->indexBuffer);
     delete mesh;
 }
 

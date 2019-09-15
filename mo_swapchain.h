@@ -31,6 +31,7 @@ typedef struct MoSwapChainRecreateInfo {
 typedef struct MoSwapChain_T {
     MoSwapBuffer    images[MO_FRAME_COUNT];
     MoCommandBuffer frames[MO_FRAME_COUNT];
+    uint32_t        frameIndex;
     MoImageBuffer   depthBuffer;
     VkSwapchainKHR  swapChainKHR;
     VkRenderPass    renderPass;
@@ -42,8 +43,8 @@ typedef struct MoSwapChain_T {
 // but you do not have to; use moInit(MoInitInfo) to work off an existing swap chain
 void moCreateSwapChain(MoSwapChainCreateInfo* pCreateInfo, MoSwapChain* pSwapChain);
 void moRecreateSwapChain(MoSwapChainRecreateInfo* pCreateInfo, MoSwapChain swapChain);
-void moBeginSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphore *pImageAcquiredSemaphore);
-VkResult moEndSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphore *pImageAcquiredSemaphore);
+void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuffer, VkSemaphore *pImageAcquiredSemaphore);
+VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaphore);
 
 // free swap chain, command and swap buffers
 void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain);

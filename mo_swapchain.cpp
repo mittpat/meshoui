@@ -73,7 +73,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
                 VkMemoryAllocateInfo info = {};
                 info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
                 info.allocationSize = req.size;
-                info.memoryTypeIndex = moMemoryType(pCreateInfo->device->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+                info.memoryTypeIndex = moMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
                 err = vkAllocateMemory(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].memory);
                 pCreateInfo->device->pCheckVkResultFn(err);
                 err = vkBindImageMemory(pCreateInfo->device->device, swapChain->images[i].back, swapChain->images[i].memory, 0);
@@ -196,7 +196,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
     }
 
     // depth buffer
-    moCreateBuffer(pCreateInfo->device, &swapChain->depthBuffer, {swapChain->extent.width, swapChain->extent.height, 1}, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+    moCreateBuffer(&swapChain->depthBuffer, {swapChain->extent.width, swapChain->extent.height, 1}, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     {
         VkImageView attachment[2] = {0, swapChain->depthBuffer->view};
@@ -226,7 +226,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     err = vkDeviceWaitIdle(g_Device->device);
     g_Device->pCheckVkResultFn(err);
 
-    moDeleteBuffer(g_Device, swapChain->depthBuffer);
+    moDeleteBuffer(swapChain->depthBuffer);
     for (uint32_t i = 0; i < countof(swapChain->images); ++i)
     {
         vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
@@ -269,7 +269,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
                 VkMemoryAllocateInfo info = {};
                 info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
                 info.allocationSize = req.size;
-                info.memoryTypeIndex = moMemoryType(g_Device->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+                info.memoryTypeIndex = moMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
                 err = vkAllocateMemory(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].memory);
                 g_Device->pCheckVkResultFn(err);
                 err = vkBindImageMemory(g_Device->device, swapChain->images[i].back, swapChain->images[i].memory, 0);
@@ -396,7 +396,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     }
 
     // depth buffer
-    moCreateBuffer(g_Device, &swapChain->depthBuffer, { swapChain->extent.width, swapChain->extent.height, 1}, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+    moCreateBuffer(&swapChain->depthBuffer, { swapChain->extent.width, swapChain->extent.height, 1}, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     {
         VkImageView attachment[2] = {0, swapChain->depthBuffer->view};
@@ -417,84 +417,92 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     }
 }
 
-void moBeginSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphore *pImageAcquiredSemaphore)
+void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuffer, VkSemaphore *pImageAcquiredSemaphore)
 {
     VkResult err;
 
     if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
     {
         pImageAcquiredSemaphore = nullptr;
+        *pCurrentCommandBuffer = swapChain->frames[swapChain->frameIndex];
     }
     else
     {
-        *pImageAcquiredSemaphore = swapChain->frames[*pFrameIndex].acquired;
+        // previous
+        *pImageAcquiredSemaphore = swapChain->frames[swapChain->frameIndex].acquired;
 
-        err = vkAcquireNextImageKHR(g_Device->device, swapChain->swapChainKHR, UINT64_MAX, *pImageAcquiredSemaphore, VK_NULL_HANDLE, pFrameIndex);
+        err = vkAcquireNextImageKHR(g_Device->device, swapChain->swapChainKHR, UINT64_MAX, *pImageAcquiredSemaphore, VK_NULL_HANDLE, &swapChain->frameIndex);
         g_Device->pCheckVkResultFn(err);
 
-        err = vkWaitForFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence, VK_TRUE, UINT64_MAX);    // wait indefinitely instead of periodically checking
+        // current
+        *pCurrentCommandBuffer = swapChain->frames[swapChain->frameIndex];
+
+        // wait indefinitely instead of periodically checking
+        err = vkWaitForFences(g_Device->device, 1, &pCurrentCommandBuffer->fence, VK_TRUE, UINT64_MAX);
         g_Device->pCheckVkResultFn(err);
 
-        err = vkResetFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence);
+        err = vkResetFences(g_Device->device, 1, &pCurrentCommandBuffer->fence);
         g_Device->pCheckVkResultFn(err);
     }
     {
-        err = vkResetCommandPool(g_Device->device, swapChain->frames[*pFrameIndex].pool, 0);
+        err = vkResetCommandPool(g_Device->device, pCurrentCommandBuffer->pool, 0);
         g_Device->pCheckVkResultFn(err);
         VkCommandBufferBeginInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        err = vkBeginCommandBuffer(swapChain->frames[*pFrameIndex].buffer, &info);
+        err = vkBeginCommandBuffer(pCurrentCommandBuffer->buffer, &info);
         g_Device->pCheckVkResultFn(err);
     }
     {
         VkRenderPassBeginInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         info.renderPass = swapChain->renderPass;
-        info.framebuffer = swapChain->images[*pFrameIndex].front;
+        info.framebuffer = swapChain->images[swapChain->frameIndex].front;
         info.renderArea.extent = swapChain->extent;
         VkClearValue clearValue[2] = {};
         clearValue[0].color = {{swapChain->clearColor.x, swapChain->clearColor.y, swapChain->clearColor.z, swapChain->clearColor.w}};
         clearValue[1].depthStencil = {1.0f, 0};
         info.pClearValues = clearValue;
         info.clearValueCount = 2;
-        vkCmdBeginRenderPass(swapChain->frames[*pFrameIndex].buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(pCurrentCommandBuffer->buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
     }
 
     VkViewport viewport{ 0, 0, float(swapChain->extent.width), float(swapChain->extent.height), 0.f, 1.f };
-    vkCmdSetViewport(swapChain->frames[*pFrameIndex].buffer, 0, 1, &viewport);
+    vkCmdSetViewport(pCurrentCommandBuffer->buffer, 0, 1, &viewport);
     VkRect2D scissor{ { 0, 0 },{ swapChain->extent.width, swapChain->extent.height } };
-    vkCmdSetScissor(swapChain->frames[*pFrameIndex].buffer, 0, 1, &scissor);
+    vkCmdSetScissor(pCurrentCommandBuffer->buffer, 0, 1, &scissor);
 }
 
-VkResult moEndSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphore *pImageAcquiredSemaphore)
+VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaphore)
 {
     VkResult err;
 
-    vkCmdEndRenderPass(swapChain->frames[*pFrameIndex].buffer);
+    MoCommandBuffer currentCommandBuffer = swapChain->frames[swapChain->frameIndex];
+
+    vkCmdEndRenderPass(currentCommandBuffer.buffer);
 
     if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
     {
-        err = vkEndCommandBuffer(swapChain->frames[*pFrameIndex].buffer);
+        err = vkEndCommandBuffer(currentCommandBuffer.buffer);
         g_Device->pCheckVkResultFn(err);
 
-        err = vkResetFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence);
+        err = vkResetFences(g_Device->device, 1, &currentCommandBuffer.fence);
         g_Device->pCheckVkResultFn(err);
 
         VkSubmitInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         info.commandBufferCount = 1;
-        info.pCommandBuffers = &swapChain->frames[*pFrameIndex].buffer;
+        info.pCommandBuffers = &currentCommandBuffer.buffer;
         info.signalSemaphoreCount = 1;
-        info.pSignalSemaphores = &swapChain->frames[*pFrameIndex].complete;
+        info.pSignalSemaphores = &currentCommandBuffer.complete;
 
-        err = vkQueueSubmit(g_Device->queue, 1, &info, swapChain->frames[*pFrameIndex].fence);
+        err = vkQueueSubmit(g_Device->queue, 1, &info, currentCommandBuffer.fence);
         g_Device->pCheckVkResultFn(err);
 
-        err = vkWaitForFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence, VK_TRUE, UINT64_MAX);
+        err = vkWaitForFences(g_Device->device, 1, &currentCommandBuffer.fence, VK_TRUE, UINT64_MAX);
         g_Device->pCheckVkResultFn(err);
 
-        err = vkResetFences(g_Device->device, 1, &swapChain->frames[*pFrameIndex].fence);
+        err = vkResetFences(g_Device->device, 1, &currentCommandBuffer.fence);
         g_Device->pCheckVkResultFn(err);
     }
     else
@@ -507,24 +515,24 @@ VkResult moEndSwapChain(MoSwapChain swapChain, uint32_t *pFrameIndex, VkSemaphor
             info.pWaitSemaphores = pImageAcquiredSemaphore;
             info.pWaitDstStageMask = &wait_stage;
             info.commandBufferCount = 1;
-            info.pCommandBuffers = &swapChain->frames[*pFrameIndex].buffer;
+            info.pCommandBuffers = &currentCommandBuffer.buffer;
             info.signalSemaphoreCount = 1;
-            info.pSignalSemaphores = &swapChain->frames[*pFrameIndex].complete;
+            info.pSignalSemaphores = &currentCommandBuffer.complete;
 
-            VkResult err = vkEndCommandBuffer(swapChain->frames[*pFrameIndex].buffer);
+            VkResult err = vkEndCommandBuffer(currentCommandBuffer.buffer);
             g_Device->pCheckVkResultFn(err);
 
-            err = vkQueueSubmit(g_Device->queue, 1, &info, swapChain->frames[*pFrameIndex].fence);
+            err = vkQueueSubmit(g_Device->queue, 1, &info, currentCommandBuffer.fence);
             g_Device->pCheckVkResultFn(err);
         }
         {
             VkPresentInfoKHR info = {};
             info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
             info.waitSemaphoreCount = 1;
-            info.pWaitSemaphores = &swapChain->frames[*pFrameIndex].complete;
+            info.pWaitSemaphores = &currentCommandBuffer.complete;
             info.swapchainCount = 1;
             info.pSwapchains = &swapChain->swapChainKHR;
-            info.pImageIndices = pFrameIndex;
+            info.pImageIndices = &swapChain->frameIndex;
             err = vkQueuePresentKHR(g_Device->queue, &info);
         }
     }
@@ -547,7 +555,7 @@ void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain)
         vkDestroySemaphore(device->device, pSwapChain->frames[i].complete, VK_NULL_HANDLE);
     }
 
-    moDeleteBuffer(device, pSwapChain->depthBuffer);
+    moDeleteBuffer(pSwapChain->depthBuffer);
     for (uint32_t i = 0; i < countof(pSwapChain->images); ++i)
     {
         vkDestroyImageView(device->device, pSwapChain->images[i].view, VK_NULL_HANDLE);
@@ -593,7 +601,7 @@ void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDes
     vkGetImageMemoryRequirements(g_Device->device, dstImage, &memRequirements);
     memAllocInfo.allocationSize = memRequirements.size;
     // Memory must be host visible to copy from
-    memAllocInfo.memoryTypeIndex = moMemoryType(g_Device->physicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memRequirements.memoryTypeBits);
+    memAllocInfo.memoryTypeIndex = moMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memRequirements.memoryTypeBits);
     err = vkAllocateMemory(g_Device->device, &memAllocInfo, VK_NULL_HANDLE, &dstImageMemory);
     g_Device->pCheckVkResultFn(err);
     err = vkBindImageMemory(g_Device->device, dstImage, dstImageMemory, 0);

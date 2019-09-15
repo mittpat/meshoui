@@ -57,6 +57,8 @@ void moCreateInstance(MoInstanceCreateInfo *pCreateInfo, VkInstance *pInstance)
             pCreateInfo->pCheckVkResultFn(err);
         }
     }
+
+    g_Instance = *pInstance;
 }
 
 void moDestroyInstance(VkInstance instance)
@@ -70,12 +72,15 @@ void moDestroyInstance(VkInstance instance)
     {
         vkDestroyInstance(instance, VK_NULL_HANDLE);
     }
+
+    g_Instance = VK_NULL_HANDLE;
 }
 
 void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
 {
     MoDevice device = *pDevice = new MoDevice_T();
     *device = {};
+    device->memoryAlignment = 256;
 
     VkResult err;
 
@@ -198,6 +203,8 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
     }
 
     device->pCheckVkResultFn = pCreateInfo->pCheckVkResultFn;
+
+    g_Device = device;
 }
 
 void moDestroyDevice(MoDevice device)
@@ -205,9 +212,11 @@ void moDestroyDevice(MoDevice device)
     vkDestroyDescriptorPool(device->device, device->descriptorPool, VK_NULL_HANDLE);
     vkDestroyDevice(device->device, VK_NULL_HANDLE);
     delete device;
+
+    g_Device = VK_NULL_HANDLE;
 }
 
-void moGlobalInit(MoInitInfo *pInfo)
+void moExternalInit(MoInitInfo *pInfo)
 {
     g_Instance = pInfo->instance;
     g_Device = new MoDevice_T;
@@ -242,7 +251,7 @@ void moGlobalInit(MoInitInfo *pInfo)
     }
 }
 
-void moGlobalShutdown()
+void moExternalShutdown()
 {
     g_Instance = VK_NULL_HANDLE;
     g_Device->physicalDevice = VK_NULL_HANDLE;

@@ -47,3 +47,5 @@ target_link_libraries(teapot_viewer PUBLIC meshoui glfw)
 add_executable(cube_passthrough examples/cube_passthrough/main.cpp)
 target_link_libraries(cube_passthrough PUBLIC meshoui glfw)
 
+add_executable(cube_imgui examples/cube_imgui/main.cpp)
+target_link_libraries(cube_imgui PUBLIC meshoui glfw imgui)

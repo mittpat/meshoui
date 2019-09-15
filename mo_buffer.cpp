@@ -6,56 +6,56 @@
 
 extern MoDevice g_Device;
 
-uint32_t moMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t type_bits)
+uint32_t moMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits)
 {
     VkPhysicalDeviceMemoryProperties prop;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &prop);
+    vkGetPhysicalDeviceMemoryProperties(g_Device->physicalDevice, &prop);
     for (uint32_t i = 0; i < prop.memoryTypeCount; i++)
         if ((prop.memoryTypes[i].propertyFlags & properties) == properties && type_bits & (1<<i))
             return i;
     return 0xFFFFFFFF;
 }
 
-void moCreateBuffer(MoDevice device, MoDeviceBuffer *pDeviceBuffer, VkDeviceSize size, VkBufferUsageFlags usage)
+void moCreateBuffer(MoDeviceBuffer *pDeviceBuffer, VkDeviceSize size, VkBufferUsageFlags usage)
 {
     MoDeviceBuffer deviceBuffer = *pDeviceBuffer = new MoDeviceBuffer_T();
     *deviceBuffer = {};
 
     VkResult err;
     {
-        VkDeviceSize buffer_size_aligned = ((size - 1) / device->memoryAlignment + 1) * device->memoryAlignment;
+        VkDeviceSize buffer_size_aligned = ((size - 1) / g_Device->memoryAlignment + 1) * g_Device->memoryAlignment;
         VkBufferCreateInfo buffer_info = {};
         buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         buffer_info.size = buffer_size_aligned;
         buffer_info.usage = usage;
         buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        err = vkCreateBuffer(device->device, &buffer_info, VK_NULL_HANDLE, &deviceBuffer->buffer);
-        device->pCheckVkResultFn(err);
+        err = vkCreateBuffer(g_Device->device, &buffer_info, VK_NULL_HANDLE, &deviceBuffer->buffer);
+        g_Device->pCheckVkResultFn(err);
     }
     {
         VkMemoryRequirements req;
-        vkGetBufferMemoryRequirements(device->device, deviceBuffer->buffer, &req);
-        device->memoryAlignment = (device->memoryAlignment > req.alignment) ? device->memoryAlignment : req.alignment;
+        vkGetBufferMemoryRequirements(g_Device->device, deviceBuffer->buffer, &req);
+        g_Device->memoryAlignment = (g_Device->memoryAlignment > req.alignment) ? g_Device->memoryAlignment : req.alignment;
         VkMemoryAllocateInfo alloc_info = {};
         alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         alloc_info.allocationSize = req.size;
-        alloc_info.memoryTypeIndex = moMemoryType(device->physicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, req.memoryTypeBits);
-        err = vkAllocateMemory(device->device, &alloc_info, VK_NULL_HANDLE, &deviceBuffer->memory);
-        device->pCheckVkResultFn(err);
+        alloc_info.memoryTypeIndex = moMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, req.memoryTypeBits);
+        err = vkAllocateMemory(g_Device->device, &alloc_info, VK_NULL_HANDLE, &deviceBuffer->memory);
+        g_Device->pCheckVkResultFn(err);
     }
 
-    err = vkBindBufferMemory(device->device, deviceBuffer->buffer, deviceBuffer->memory, 0);
-    device->pCheckVkResultFn(err);
+    err = vkBindBufferMemory(g_Device->device, deviceBuffer->buffer, deviceBuffer->memory, 0);
+    g_Device->pCheckVkResultFn(err);
     deviceBuffer->size = size;
 }
 
-void moUploadBuffer(MoDevice device, MoDeviceBuffer deviceBuffer, VkDeviceSize dataSize, const void *pData)
+void moUploadBuffer(MoDeviceBuffer deviceBuffer, VkDeviceSize dataSize, const void *pData)
 {
     VkResult err;
     {
         void* dest = nullptr;
-        err = vkMapMemory(device->device, deviceBuffer->memory, 0, dataSize, 0, &dest);
-        device->pCheckVkResultFn(err);
+        err = vkMapMemory(g_Device->device, deviceBuffer->memory, 0, dataSize, 0, &dest);
+        g_Device->pCheckVkResultFn(err);
         memcpy(dest, pData, dataSize);
     }
     {
@@ -63,21 +63,21 @@ void moUploadBuffer(MoDevice device, MoDeviceBuffer deviceBuffer, VkDeviceSize d
         range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         range.memory = deviceBuffer->memory;
         range.size = VK_WHOLE_SIZE;
-        err = vkFlushMappedMemoryRanges(device->device, 1, &range);
-        device->pCheckVkResultFn(err);
+        err = vkFlushMappedMemoryRanges(g_Device->device, 1, &range);
+        g_Device->pCheckVkResultFn(err);
     }
 
-    vkUnmapMemory(device->device, deviceBuffer->memory);
+    vkUnmapMemory(g_Device->device, deviceBuffer->memory);
 }
 
-void moDeleteBuffer(MoDevice device, MoDeviceBuffer deviceBuffer)
+void moDeleteBuffer(MoDeviceBuffer deviceBuffer)
 {
-    vkDestroyBuffer(device->device, deviceBuffer->buffer, VK_NULL_HANDLE);
-    vkFreeMemory(device->device, deviceBuffer->memory, VK_NULL_HANDLE);
+    vkDestroyBuffer(g_Device->device, deviceBuffer->buffer, VK_NULL_HANDLE);
+    vkFreeMemory(g_Device->device, deviceBuffer->memory, VK_NULL_HANDLE);
     delete deviceBuffer;
 }
 
-void moCreateBuffer(MoDevice device, MoImageBuffer *pImageBuffer, const VkExtent3D & extent, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectMask)
+void moCreateBuffer(MoImageBuffer *pImageBuffer, const VkExtent3D & extent, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectMask)
 {
     MoImageBuffer imageBuffer = *pImageBuffer = new MoImageBuffer_T();
     *imageBuffer = {};
@@ -96,20 +96,20 @@ void moCreateBuffer(MoDevice device, MoImageBuffer *pImageBuffer, const VkExtent
         info.usage = usage;
         info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        err = vkCreateImage(device->device, &info, VK_NULL_HANDLE, &imageBuffer->image);
-        device->pCheckVkResultFn(err);
+        err = vkCreateImage(g_Device->device, &info, VK_NULL_HANDLE, &imageBuffer->image);
+        g_Device->pCheckVkResultFn(err);
     }
     {
         VkMemoryRequirements req;
-        vkGetImageMemoryRequirements(device->device, imageBuffer->image, &req);
+        vkGetImageMemoryRequirements(g_Device->device, imageBuffer->image, &req);
         VkMemoryAllocateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         info.allocationSize = req.size;
-        info.memoryTypeIndex = moMemoryType(device->physicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
-        err = vkAllocateMemory(device->device, &info, VK_NULL_HANDLE, &imageBuffer->memory);
-        device->pCheckVkResultFn(err);
-        err = vkBindImageMemory(device->device, imageBuffer->image, imageBuffer->memory, 0);
-        device->pCheckVkResultFn(err);
+        info.memoryTypeIndex = moMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+        err = vkAllocateMemory(g_Device->device, &info, VK_NULL_HANDLE, &imageBuffer->memory);
+        g_Device->pCheckVkResultFn(err);
+        err = vkBindImageMemory(g_Device->device, imageBuffer->image, imageBuffer->memory, 0);
+        g_Device->pCheckVkResultFn(err);
     }
     {
         VkImageViewCreateInfo info = {};
@@ -126,8 +126,8 @@ void moCreateBuffer(MoDevice device, MoImageBuffer *pImageBuffer, const VkExtent
         info.subresourceRange.baseArrayLayer = 0;
         info.subresourceRange.layerCount = 1;
         info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        err = vkCreateImageView(device->device, &info, VK_NULL_HANDLE, &imageBuffer->view);
-        device->pCheckVkResultFn(err);
+        err = vkCreateImageView(g_Device->device, &info, VK_NULL_HANDLE, &imageBuffer->view);
+        g_Device->pCheckVkResultFn(err);
     }
 }
 
@@ -171,11 +171,11 @@ void moTransferBuffer(VkCommandBuffer commandBuffer, MoDeviceBuffer fromBuffer, 
     }
 }
 
-void moDeleteBuffer(MoDevice device, MoImageBuffer imageBuffer)
+void moDeleteBuffer(MoImageBuffer imageBuffer)
 {
-    vkDestroyImageView(device->device, imageBuffer->view, VK_NULL_HANDLE);
-    vkDestroyImage(device->device, imageBuffer->image, VK_NULL_HANDLE);
-    vkFreeMemory(device->device, imageBuffer->memory, VK_NULL_HANDLE);
+    vkDestroyImageView(g_Device->device, imageBuffer->view, VK_NULL_HANDLE);
+    vkDestroyImage(g_Device->device, imageBuffer->image, VK_NULL_HANDLE);
+    vkFreeMemory(g_Device->device, imageBuffer->memory, VK_NULL_HANDLE);
     delete imageBuffer;
 }
 

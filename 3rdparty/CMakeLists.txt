@@ -106,6 +106,15 @@ endfunction()
 set(ENABLE_HLSL OFF CACHE BOOL "Enables HLSL input support")
 add_subdirectory(glslang)
 
+# imgui
+add_library(imgui
+    imgui/imconfig.h      imgui/imgui.h           imgui/examples/imgui_impl_glfw.cpp   imgui/imstb_textedit.h
+    imgui/imgui.cpp       imgui/imgui_internal.h  imgui/examples/imgui_impl_glfw.h     imgui/imstb_truetype.h
+    imgui/imgui_demo.cpp  imgui/imgui_widgets.cpp imgui/examples/imgui_impl_vulkan.cpp
+    imgui/imgui_draw.cpp  imgui/imstb_rectpack.h  imgui/examples/imgui_impl_vulkan.h)
+target_include_directories(imgui PUBLIC imgui PRIVATE ${Vulkan_INCLUDE_DIR})
+target_compile_definitions(imgui PUBLIC -DIMGUI_IMPL_API=)
+
 # linalg
 add_library(linalg INTERFACE)
 target_include_directories(linalg INTERFACE linalg)

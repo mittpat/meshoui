@@ -67,7 +67,7 @@ void moCreatePipelineLayout(MoPipelineLayout *pPipeline)
 
     for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
     {
-        moCreateBuffer(g_Device, &pipeline->uniformBuffer[i], sizeof(MoUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        moCreateBuffer(&pipeline->uniformBuffer[i], sizeof(MoUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
         VkDescriptorBufferInfo bufferInfo[1] = {};
         bufferInfo[0].buffer = pipeline->uniformBuffer[i]->buffer;
@@ -226,7 +226,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, VkPipeline *pPipe
 void moDestroyPipelineLayout(MoPipelineLayout pipeline)
 {
     vkQueueWaitIdle(g_Device->queue);
-    for (size_t i = 0; i < MO_FRAME_COUNT; ++i) { moDeleteBuffer(g_Device, pipeline->uniformBuffer[i]); }
+    for (size_t i = 0; i < MO_FRAME_COUNT; ++i) { moDeleteBuffer(pipeline->uniformBuffer[i]); }
     vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT], VK_NULL_HANDLE);
     vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT], VK_NULL_HANDLE);
     vkDestroyPipelineLayout(g_Device->device, pipeline->pipelineLayout, VK_NULL_HANDLE);

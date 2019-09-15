@@ -62,12 +62,12 @@ void generateTexture(MoImageBuffer *pImageBuffer, const MoTextureInfo &textureIn
     }
 
     // create buffer
-    moCreateBuffer(g_Device, pImageBuffer, {width, height, 1}, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+    moCreateBuffer(pImageBuffer, {width, height, 1}, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
 
     // upload
     MoDeviceBuffer upload = {};
-    moCreateBuffer(g_Device, &upload, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    moUploadBuffer(g_Device, upload, size, dataPtr);
+    moCreateBuffer(&upload, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    moUploadBuffer(upload, size, dataPtr);
     moTransferBuffer(commandBuffer, upload, *pImageBuffer, {width, height, 1});
 
     // end
@@ -86,7 +86,7 @@ void generateTexture(MoImageBuffer *pImageBuffer, const MoTextureInfo &textureIn
     err = vkDeviceWaitIdle(g_Device->device);
     g_Device->pCheckVkResultFn(err);
 
-    moDeleteBuffer(g_Device, upload);
+    moDeleteBuffer(upload);
 }
 
 void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMaterial)
@@ -182,11 +182,11 @@ void moRegisterMaterial(MoPipelineLayout pipeline, MoMaterial material)
 void moDestroyMaterial(MoMaterial material)
 {
     vkQueueWaitIdle(g_Device->queue);
-    moDeleteBuffer(g_Device, material->ambientImage);
-    moDeleteBuffer(g_Device, material->diffuseImage);
-    moDeleteBuffer(g_Device, material->normalImage);
-    moDeleteBuffer(g_Device, material->specularImage);
-    moDeleteBuffer(g_Device, material->emissiveImage);
+    moDeleteBuffer(material->ambientImage);
+    moDeleteBuffer(material->diffuseImage);
+    moDeleteBuffer(material->normalImage);
+    moDeleteBuffer(material->specularImage);
+    moDeleteBuffer(material->emissiveImage);
 
     vkDestroySampler(g_Device->device, material->ambientSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->diffuseSampler, VK_NULL_HANDLE);
