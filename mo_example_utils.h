@@ -4,7 +4,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <string>
 
 #include <linalg.h>
 
@@ -31,32 +30,27 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL moVkDebugReport(
     const char* pMessage,
     void*)
 {
-    std::string prefix;
-
     if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
     {
-        prefix += "ERROR:";
-    };
+        fprintf(stderr, "ERROR: [%s] Code %d : %s\n", pLayerPrefix, messageCode, pMessage);
+    }
     if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
     {
-        prefix += "WARNING:";
-    };
+        fprintf(stdout, "WARNING: [%s] Code %d : %s\n", pLayerPrefix, messageCode, pMessage);
+    }
     if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
     {
-        prefix += "PERFORMANCE:";
-    };
+        fprintf(stdout, "PERFORMANCE: [%s] Code %d : %s\n", pLayerPrefix, messageCode, pMessage);
+    }
     if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
     {
-        prefix += "INFO:";
+        fprintf(stdout, "INFO: [%s] Code %d : %s\n", pLayerPrefix, messageCode, pMessage);
     }
     if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
     {
-        prefix += "DEBUG:";
+        fprintf(stdout, "DEBUG: [%s] Code %d : %s\n", pLayerPrefix, messageCode, pMessage);
     }
-
-    fprintf(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ? stderr : stdout, "%s [%s] Code %d : %s\n", prefix.c_str(), pLayerPrefix, messageCode, pMessage);
     fflush(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ? stderr : stdout);
-
     return VK_FALSE;
 }
 
