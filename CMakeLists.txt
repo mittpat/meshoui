@@ -5,7 +5,7 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(3rdparty)
 
-set(shaders shaders/dome.glsl shaders/phong.glsl shaders/passthrough.glsl)
+set(shaders shaders/dome.glsl shaders/phong.glsl shaders/phong_blur.glsl shaders/passthrough.glsl)
 set_source_files_properties(${shaders} PROPERTIES HEADER_FILE_ONLY TRUE)
 set(resources resources/teapot.dae)
 set_source_files_properties(${resources} PROPERTIES HEADER_FILE_ONLY TRUE)
@@ -43,6 +43,9 @@ target_link_libraries(teapot_readback PUBLIC meshoui)
 
 add_executable(teapot_viewer examples/teapot_viewer/main.cpp)
 target_link_libraries(teapot_viewer PUBLIC meshoui glfw)
+
+add_executable(teapot_blur examples/teapot_blur/main.cpp)
+target_link_libraries(teapot_blur PUBLIC meshoui glfw)
 
 add_executable(cube_passthrough examples/cube_passthrough/main.cpp)
 target_link_libraries(cube_passthrough PUBLIC meshoui glfw)

@@ -52,6 +52,22 @@ void moCreatePipelineLayout(MoPipelineLayout *pPipeline)
         g_Device->pCheckVkResultFn(err);
     }
 
+    // renderbuffer bindings
+    {
+        VkDescriptorSetLayoutBinding binding[1];
+        binding[0].binding = 0;
+        binding[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding[0].descriptorCount = 1;
+        binding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        binding[0].pImmutableSamplers = VK_NULL_HANDLE;
+        VkDescriptorSetLayoutCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        info.bindingCount = countof(binding);
+        info.pBindings = binding;
+        err = vkCreateDescriptorSetLayout(g_Device->device, &info, VK_NULL_HANDLE, &pipeline->descriptorSetLayout[MO_RENDER_DESC_LAYOUT]);
+        g_Device->pCheckVkResultFn(err);
+    }
+
     {
         VkDescriptorSetLayout descriptorSetLayout[MO_FRAME_COUNT] = {};
         for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
@@ -227,12 +243,14 @@ void moDestroyPipelineLayout(MoPipelineLayout pipeline)
 {
     vkQueueWaitIdle(g_Device->queue);
     for (size_t i = 0; i < MO_FRAME_COUNT; ++i) { moDeleteBuffer(pipeline->uniformBuffer[i]); }
-    vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT], VK_NULL_HANDLE);
-    vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT], VK_NULL_HANDLE);
+    for (size_t i = 0; i < MO_COUNT_DESC_LAYOUT; ++i)
+    {
+        vkDestroyDescriptorSetLayout(g_Device->device, pipeline->descriptorSetLayout[i], VK_NULL_HANDLE);
+        pipeline->descriptorSetLayout[i] = VK_NULL_HANDLE;
+    }
     vkDestroyPipelineLayout(g_Device->device, pipeline->pipelineLayout, VK_NULL_HANDLE);
-    pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT] = VK_NULL_HANDLE;
-    pipeline->descriptorSetLayout[MO_MATERIAL_DESC_LAYOUT] = VK_NULL_HANDLE;
     pipeline->pipelineLayout = VK_NULL_HANDLE;
+    vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, 2, pipeline->descriptorSet);
     memset(&pipeline->uniformBuffer, 0, sizeof(pipeline->uniformBuffer));
     memset(&pipeline->descriptorSet, 0, sizeof(pipeline->descriptorSet));
     delete pipeline;
@@ -241,7 +259,7 @@ void moDestroyPipelineLayout(MoPipelineLayout pipeline)
 void moBindPipeline(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet pipelineDescriptorSet)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &pipelineDescriptorSet, 0, VK_NULL_HANDLE);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, MO_PROGRAM_DESC_LAYOUT, 1, &pipelineDescriptorSet, 0, VK_NULL_HANDLE);
 }
 
 /*

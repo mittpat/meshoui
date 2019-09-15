@@ -2,6 +2,7 @@
 
 #include "mo_buffer.h"
 #include "mo_device.h"
+#include "mo_pipeline.h"
 
 #include <vulkan/vulkan.h>
 
@@ -47,10 +48,31 @@ void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuf
 VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaphore);
 
 // free swap chain, command and swap buffers
-void moDestroySwapChain(MoDevice device, MoSwapChain pSwapChain);
+void moDestroySwapChain(MoDevice device, MoSwapChain swapChain);
 
 // readback a framebuffer
 void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool);
+
+typedef struct MoRenderbufferRegistration {
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSet descriptorSet[MO_FRAME_COUNT];
+} MoRenderbufferRegistration;
+
+typedef struct MoRenderbuffer_T {
+    VkSampler renderSampler;
+    std::uint32_t registrationCount;
+    const MoRenderbufferRegistration* pRegistrations;
+}* MoRenderbuffer;
+
+void moCreateRenderbuffer(MoRenderbuffer *pRenderbuffer);
+
+void moRecreateRenderbuffer(MoRenderbuffer renderbuffer);
+
+void moRegisterRenderbuffer(MoSwapChain swapChain, MoPipelineLayout pipeline, MoRenderbuffer renderbuffer);
+
+void moDestroyRenderbuffer(MoRenderbuffer renderbuffer);
+
+void moBindRenderbuffer(VkCommandBuffer commandBuffer, MoRenderbuffer renderbuffer, VkPipelineLayout pipelineLayout, uint32_t frameIndex);
 
 /*
 ------------------------------------------------------------------------------

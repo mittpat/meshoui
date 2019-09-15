@@ -187,12 +187,16 @@ void moDestroyMaterial(MoMaterial material)
     moDeleteBuffer(material->normalImage);
     moDeleteBuffer(material->specularImage);
     moDeleteBuffer(material->emissiveImage);
-
     vkDestroySampler(g_Device->device, material->ambientSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->diffuseSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->normalSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->specularSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->emissiveSampler, VK_NULL_HANDLE);
+    for (std::uint32_t i = 0; i < material->registrationCount; ++i)
+    {
+        vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, 1, &material->pRegistrations[i].descriptorSet);
+    }
+    carray_free(material->pRegistrations, &material->registrationCount);
     delete material;
 }
 
@@ -202,7 +206,7 @@ void moBindMaterial(VkCommandBuffer commandBuffer, MoMaterial material, VkPipeli
     {
         if (material->pRegistrations[i].pipelineLayout == pipelineLayout)
         {
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material->pRegistrations[i].descriptorSet, 0, VK_NULL_HANDLE);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, MO_MATERIAL_DESC_LAYOUT, 1, &material->pRegistrations[i].descriptorSet, 0, VK_NULL_HANDLE);
             break;
         }
     }

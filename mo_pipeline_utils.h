@@ -8,6 +8,8 @@ void moCreateDomePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayo
 
 void moCreatePassthroughPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
 
+void moCreatePhongBlurPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
+
 /*
 ------------------------------------------------------------------------------
 This software is available under 2 licenses -- choose whichever you prefer.

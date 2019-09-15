@@ -72,6 +72,29 @@ void moCreatePassthroughPipeline(VkRenderPass renderPass, VkPipelineLayout pipel
     moCreatePipeline(&info, pPipeline);
 }
 
+void moCreatePhongBlurPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
+{
+    MoPipelineCreateInfo info = {};
+    info.flags = MO_PIPELINE_FEATURE_DEFAULT;
+    std::vector<char> mo_phong_shader_vert_spv;
+    {
+        std::ifstream fileStream("phong_blur.vert.spv", std::ifstream::binary);
+        mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    std::vector<char> mo_phong_shader_frag_spv;
+    {
+        std::ifstream fileStream("phong_blur.frag.spv", std::ifstream::binary);
+        mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    info.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
+    info.vertexShaderSize = mo_phong_shader_vert_spv.size();
+    info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
+    info.fragmentShaderSize = mo_phong_shader_frag_spv.size();
+    info.pipelineLayout = pipelineLayout;
+    info.renderPass = renderPass;
+    moCreatePipeline(&info, pPipeline);
+}
+
 /*
 ------------------------------------------------------------------------------
 This software is available under 2 licenses -- choose whichever you prefer.

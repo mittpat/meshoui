@@ -23,7 +23,7 @@ typedef struct MoMaterial_T {
     MoImageBuffer normalImage;
     MoImageBuffer specularImage;
     MoImageBuffer emissiveImage;    
-    std::uint32_t                 registrationCount;
+    std::uint32_t registrationCount;
     const MoMaterialRegistration* pRegistrations;
 }* MoMaterial;
 
