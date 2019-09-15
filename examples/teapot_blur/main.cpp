@@ -232,7 +232,6 @@ int main(int argc, char** argv)
         // Create SwapChain, RenderPass, Framebuffer, etc.
         {
             MoSwapChainCreateInfo info = {};
-            info.device = device;
             info.surface = surface;
             info.surfaceFormat = surfaceFormat;
             info.extent = {(uint32_t)width, (uint32_t)height};
@@ -249,6 +248,7 @@ int main(int argc, char** argv)
     VkPipeline phongPipeline;
     moCreatePhongBlurPipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &phongPipeline);
 
+    // Blur
     MoRenderbuffer renderBuffer;
     moCreateRenderbuffer(&renderBuffer);
     moRegisterRenderbuffer(swapChain, pipelineLayout, renderBuffer);
@@ -375,8 +375,7 @@ int main(int argc, char** argv)
             recreateInfo.extent = {(uint32_t)width, (uint32_t)height};
             recreateInfo.vsync = VK_TRUE;
             moRecreateSwapChain(&recreateInfo, swapChain);
-            moRecreateRenderbuffer(renderBuffer);
-            moRegisterRenderbuffer(swapChain, pipelineLayout, renderBuffer);
+            moReregisterRenderbuffer(swapChain, renderBuffer);
             err = VK_SUCCESS;
         }
         moVkCheckResult(err);
@@ -394,7 +393,7 @@ int main(int argc, char** argv)
     moDestroyPipelineLayout(pipelineLayout);
 
     // Cleanup
-    moDestroySwapChain(device, swapChain);
+    moDestroySwapChain(swapChain);
     vkDestroySurfaceKHR(instance, surface, VK_NULL_HANDLE);
     moDestroyDevice(device);
     moDestroyInstance(instance);

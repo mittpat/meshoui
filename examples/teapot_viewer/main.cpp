@@ -232,7 +232,6 @@ int main(int argc, char** argv)
         // Create SwapChain, RenderPass, Framebuffer, etc.
         {
             MoSwapChainCreateInfo info = {};
-            info.device = device;
             info.surface = surface;
             info.surfaceFormat = surfaceFormat;
             info.extent = {(uint32_t)width, (uint32_t)height};
@@ -386,7 +385,7 @@ int main(int argc, char** argv)
     moDestroyPipelineLayout(pipelineLayout);
 
     // Cleanup
-    moDestroySwapChain(device, swapChain);
+    moDestroySwapChain(swapChain);
     vkDestroySurfaceKHR(instance, surface, VK_NULL_HANDLE);
     moDestroyDevice(device);
     moDestroyInstance(instance);

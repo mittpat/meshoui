@@ -16,8 +16,8 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
             VkCommandPoolCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
             info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            info.queueFamilyIndex = pCreateInfo->device->queueFamily;
-            err = vkCreateCommandPool(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].pool);
+            info.queueFamilyIndex = g_Device->queueFamily;
+            err = vkCreateCommandPool(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].pool);
             pCreateInfo->pCheckVkResultFn(err);
         }
         {
@@ -26,22 +26,22 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
             info.commandPool = swapChain->frames[i].pool;
             info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
             info.commandBufferCount = 1;
-            err = vkAllocateCommandBuffers(pCreateInfo->device->device, &info, &swapChain->frames[i].buffer);
+            err = vkAllocateCommandBuffers(g_Device->device, &info, &swapChain->frames[i].buffer);
             pCreateInfo->pCheckVkResultFn(err);
         }
         {
             VkFenceCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-            err = vkCreateFence(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].fence);
+            err = vkCreateFence(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].fence);
             pCreateInfo->pCheckVkResultFn(err);
         }
         {
             VkSemaphoreCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-            err = vkCreateSemaphore(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].acquired);
+            err = vkCreateSemaphore(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].acquired);
             pCreateInfo->pCheckVkResultFn(err);
-            err = vkCreateSemaphore(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].complete);
+            err = vkCreateSemaphore(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->frames[i].complete);
             pCreateInfo->pCheckVkResultFn(err);
         }
     }
@@ -65,20 +65,20 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
                 info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
                 info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
                 info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                err = vkCreateImage(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].back);
-                pCreateInfo->device->pCheckVkResultFn(err);
+                err = vkCreateImage(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].back);
+                g_Device->pCheckVkResultFn(err);
             }
             {
                 VkMemoryRequirements req;
-                vkGetImageMemoryRequirements(pCreateInfo->device->device, swapChain->images[i].back, &req);
+                vkGetImageMemoryRequirements(g_Device->device, swapChain->images[i].back, &req);
                 VkMemoryAllocateInfo info = {};
                 info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
                 info.allocationSize = req.size;
                 info.memoryTypeIndex = moMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
-                err = vkAllocateMemory(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].memory);
-                pCreateInfo->device->pCheckVkResultFn(err);
-                err = vkBindImageMemory(pCreateInfo->device->device, swapChain->images[i].back, swapChain->images[i].memory, 0);
-                pCreateInfo->device->pCheckVkResultFn(err);
+                err = vkAllocateMemory(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].memory);
+                g_Device->pCheckVkResultFn(err);
+                err = vkBindImageMemory(g_Device->device, swapChain->images[i].back, swapChain->images[i].memory, 0);
+                g_Device->pCheckVkResultFn(err);
             }
         }
     }
@@ -99,7 +99,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         info.clipped = VK_TRUE;
         info.oldSwapchain = VK_NULL_HANDLE;
         VkSurfaceCapabilitiesKHR cap;
-        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pCreateInfo->device->physicalDevice, pCreateInfo->surface, &cap);
+        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_Device->physicalDevice, pCreateInfo->surface, &cap);
         pCreateInfo->pCheckVkResultFn(err);
         if (info.minImageCount < cap.minImageCount)
             info.minImageCount = cap.minImageCount;
@@ -114,13 +114,13 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         {
             info.imageExtent = swapChain->extent = cap.currentExtent;
         }
-        err = vkCreateSwapchainKHR(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->swapChainKHR);
+        err = vkCreateSwapchainKHR(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->swapChainKHR);
         pCreateInfo->pCheckVkResultFn(err);
         uint32_t backBufferCount = 0;
-        err = vkGetSwapchainImagesKHR(pCreateInfo->device->device, swapChain->swapChainKHR, &backBufferCount, NULL);
+        err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, NULL);
         pCreateInfo->pCheckVkResultFn(err);
         VkImage backBuffer[MO_FRAME_COUNT] = {};
-        err = vkGetSwapchainImagesKHR(pCreateInfo->device->device, swapChain->swapChainKHR, &backBufferCount, backBuffer);
+        err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, backBuffer);
         pCreateInfo->pCheckVkResultFn(err);
 
         for (uint32_t i = 0; i < countof(swapChain->images); ++i)
@@ -174,7 +174,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         info.pAttachments = attachment;
         info.subpassCount = 1;
         info.pSubpasses = &subpass;
-        err = vkCreateRenderPass(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->renderPass);
+        err = vkCreateRenderPass(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->renderPass);
         pCreateInfo->pCheckVkResultFn(err);
     }
     {
@@ -191,7 +191,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         for (uint32_t i = 0; i < countof(swapChain->images); ++i)
         {
             info.image = swapChain->images[i].back;
-            err = vkCreateImageView(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].view);
+            err = vkCreateImageView(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].view);
             pCreateInfo->pCheckVkResultFn(err);
         }
     }
@@ -212,7 +212,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         for (uint32_t i = 0; i < countof(swapChain->images); ++i)
         {
             attachment[0] = swapChain->images[i].view;
-            err = vkCreateFramebuffer(pCreateInfo->device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].front);
+            err = vkCreateFramebuffer(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].front);
             pCreateInfo->pCheckVkResultFn(err);
         }
     }
@@ -541,36 +541,143 @@ VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaph
     return err;
 }
 
-void moDestroySwapChain(MoDevice device, MoSwapChain swapChain)
+void moDestroySwapChain(MoSwapChain swapChain)
 {
     VkResult err;
-    err = vkDeviceWaitIdle(device->device);
-    device->pCheckVkResultFn(err);
-    vkQueueWaitIdle(device->queue);
+    err = vkDeviceWaitIdle(g_Device->device);
+    g_Device->pCheckVkResultFn(err);
+    vkQueueWaitIdle(g_Device->queue);
     for (uint32_t i = 0; i < countof(swapChain->frames); ++i)
     {
-        vkDestroyFence(device->device, swapChain->frames[i].fence, VK_NULL_HANDLE);
-        vkFreeCommandBuffers(device->device, swapChain->frames[i].pool, 1, &swapChain->frames[i].buffer);
-        vkDestroyCommandPool(device->device, swapChain->frames[i].pool, VK_NULL_HANDLE);
-        vkDestroySemaphore(device->device, swapChain->frames[i].acquired, VK_NULL_HANDLE);
-        vkDestroySemaphore(device->device, swapChain->frames[i].complete, VK_NULL_HANDLE);
+        vkDestroyFence(g_Device->device, swapChain->frames[i].fence, VK_NULL_HANDLE);
+        vkFreeCommandBuffers(g_Device->device, swapChain->frames[i].pool, 1, &swapChain->frames[i].buffer);
+        vkDestroyCommandPool(g_Device->device, swapChain->frames[i].pool, VK_NULL_HANDLE);
+        vkDestroySemaphore(g_Device->device, swapChain->frames[i].acquired, VK_NULL_HANDLE);
+        vkDestroySemaphore(g_Device->device, swapChain->frames[i].complete, VK_NULL_HANDLE);
     }
 
     moDeleteBuffer(swapChain->depthBuffer);
     for (uint32_t i = 0; i < countof(swapChain->images); ++i)
     {
-        vkDestroyImageView(device->device, swapChain->images[i].view, VK_NULL_HANDLE);
-        vkDestroyFramebuffer(device->device, swapChain->images[i].front, VK_NULL_HANDLE);
+        vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
+        vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
         if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
         {
-            vkFreeMemory(device->device, swapChain->images[i].memory, VK_NULL_HANDLE);
-            vkDestroyImage(device->device, swapChain->images[i].back, VK_NULL_HANDLE);
+            vkFreeMemory(g_Device->device, swapChain->images[i].memory, VK_NULL_HANDLE);
+            vkDestroyImage(g_Device->device, swapChain->images[i].back, VK_NULL_HANDLE);
         }
     }
-    vkDestroyRenderPass(device->device, swapChain->renderPass, VK_NULL_HANDLE);
+    vkDestroyRenderPass(g_Device->device, swapChain->renderPass, VK_NULL_HANDLE);
     if (swapChain->swapChainKHR != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(device->device, swapChain->swapChainKHR, VK_NULL_HANDLE);
+        vkDestroySwapchainKHR(g_Device->device, swapChain->swapChainKHR, VK_NULL_HANDLE);
+    }
+}
+
+void moCreateRenderbuffer(MoRenderbuffer *pRenderbuffer)
+{
+    MoRenderbuffer renderbuffer = *pRenderbuffer = new MoRenderbuffer_T();
+    *renderbuffer = {};
+
+    VkResult err;
+
+    {
+        VkSamplerCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.minLod = -1000;
+        info.maxLod = 1000;
+        info.maxAnisotropy = 1.0f;
+        info.minFilter = info.magFilter = VK_FILTER_NEAREST;
+        err = vkCreateSampler(g_Device->device, &info, VK_NULL_HANDLE, &renderbuffer->renderSampler);
+        g_Device->pCheckVkResultFn(err);
+    }
+}
+
+void moReregisterRenderbuffer(MoSwapChain swapChain, MoRenderbuffer renderbuffer)
+{
+    for (std::uint32_t j = 0; j < renderbuffer->registrationCount; ++j)
+    {
+        VkDescriptorImageInfo imageDescriptor[MO_FRAME_COUNT] = {};
+        VkWriteDescriptorSet writeDescriptor[MO_FRAME_COUNT] = {};
+        for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
+        {
+            imageDescriptor[i].sampler = renderbuffer->renderSampler;
+            imageDescriptor[i].imageView = swapChain->images[MO_FRAME_COUNT-i-1].view;
+            imageDescriptor[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            writeDescriptor[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptor[i].dstSet = renderbuffer->pRegistrations[j].descriptorSet[i];
+            writeDescriptor[i].dstBinding = 0;
+            writeDescriptor[i].descriptorCount = 1;
+            writeDescriptor[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            writeDescriptor[i].pImageInfo = &imageDescriptor[i];
+        }
+        vkUpdateDescriptorSets(g_Device->device, 2, writeDescriptor, 0, VK_NULL_HANDLE);
+    }
+}
+
+void moRegisterRenderbuffer(MoSwapChain swapChain, MoPipelineLayout pipeline, MoRenderbuffer renderbuffer)
+{
+    MoRenderbufferRegistration registration = {};
+    registration.pipelineLayout = pipeline->pipelineLayout;
+
+    {
+        VkDescriptorSetLayout descriptorSetLayout[MO_FRAME_COUNT] = {};
+        for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
+            descriptorSetLayout[i] = pipeline->descriptorSetLayout[MO_RENDER_DESC_LAYOUT];
+        VkDescriptorSetAllocateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        info.descriptorPool = g_Device->descriptorPool;
+        info.descriptorSetCount = MO_FRAME_COUNT;
+        info.pSetLayouts = descriptorSetLayout;
+        VkResult err = vkAllocateDescriptorSets(g_Device->device, &info, registration.descriptorSet);
+        g_Device->pCheckVkResultFn(err);
+    }
+
+    {
+        VkDescriptorImageInfo imageDescriptor[MO_FRAME_COUNT] = {};
+        VkWriteDescriptorSet writeDescriptor[MO_FRAME_COUNT] = {};
+        for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
+        {
+            imageDescriptor[i].sampler = renderbuffer->renderSampler;
+            imageDescriptor[i].imageView = swapChain->images[MO_FRAME_COUNT-i-1].view;
+            imageDescriptor[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            writeDescriptor[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptor[i].dstSet = registration.descriptorSet[i];
+            writeDescriptor[i].dstBinding = 0;
+            writeDescriptor[i].descriptorCount = 1;
+            writeDescriptor[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            writeDescriptor[i].pImageInfo = &imageDescriptor[i];
+        }
+        vkUpdateDescriptorSets(g_Device->device, 2, writeDescriptor, 0, VK_NULL_HANDLE);
+    }
+
+    carray_push_back(&renderbuffer->pRegistrations, &renderbuffer->registrationCount, registration);
+}
+
+void moDestroyRenderbuffer(MoRenderbuffer renderbuffer)
+{
+    for (std::uint32_t i = 0; i < renderbuffer->registrationCount; ++i)
+    {
+        vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, MO_FRAME_COUNT, renderbuffer->pRegistrations[i].descriptorSet);
+    }
+    vkDestroySampler(g_Device->device, renderbuffer->renderSampler, VK_NULL_HANDLE);
+    carray_free(renderbuffer->pRegistrations, &renderbuffer->registrationCount);
+    delete renderbuffer;
+}
+
+void moBindRenderbuffer(VkCommandBuffer commandBuffer, MoRenderbuffer renderbuffer, VkPipelineLayout pipelineLayout, std::uint32_t frameIndex)
+{
+    for (std::uint32_t i = 0; i < renderbuffer->registrationCount; ++i)
+    {
+        if (renderbuffer->pRegistrations[i].pipelineLayout == pipelineLayout)
+        {
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, MO_RENDER_DESC_LAYOUT, 1, &renderbuffer->pRegistrations[i].descriptorSet[frameIndex], 0, VK_NULL_HANDLE);
+            break;
+        }
     }
 }
 
@@ -739,96 +846,6 @@ void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDes
     vkUnmapMemory(g_Device->device, dstImageMemory);
     vkFreeMemory(g_Device->device, dstImageMemory, VK_NULL_HANDLE);
     vkDestroyImage(g_Device->device, dstImage, VK_NULL_HANDLE);
-}
-
-void moCreateRenderbuffer(MoRenderbuffer *pRenderbuffer)
-{
-    MoRenderbuffer renderbuffer = *pRenderbuffer = new MoRenderbuffer_T();
-    *renderbuffer = {};
-
-    VkResult err;
-
-    {
-        VkSamplerCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        info.minLod = -1000;
-        info.maxLod = 1000;
-        info.maxAnisotropy = 1.0f;
-        info.minFilter = info.magFilter = VK_FILTER_NEAREST;
-        err = vkCreateSampler(g_Device->device, &info, VK_NULL_HANDLE, &renderbuffer->renderSampler);
-        g_Device->pCheckVkResultFn(err);
-    }
-}
-
-void moRecreateRenderbuffer(MoRenderbuffer renderbuffer)
-{
-    carray_free(renderbuffer->pRegistrations, &renderbuffer->registrationCount);
-}
-
-void moRegisterRenderbuffer(MoSwapChain swapChain, MoPipelineLayout pipeline, MoRenderbuffer renderbuffer)
-{
-    MoRenderbufferRegistration registration = {};
-    registration.pipelineLayout = pipeline->pipelineLayout;
-
-    {
-        VkDescriptorSetLayout descriptorSetLayout[MO_FRAME_COUNT] = {};
-        for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
-            descriptorSetLayout[i] = pipeline->descriptorSetLayout[MO_RENDER_DESC_LAYOUT];
-        VkDescriptorSetAllocateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        info.descriptorPool = g_Device->descriptorPool;
-        info.descriptorSetCount = MO_FRAME_COUNT;
-        info.pSetLayouts = descriptorSetLayout;
-        VkResult err = vkAllocateDescriptorSets(g_Device->device, &info, registration.descriptorSet);
-        g_Device->pCheckVkResultFn(err);
-    }
-
-    {
-        VkDescriptorImageInfo imageDescriptor[MO_FRAME_COUNT] = {};
-        VkWriteDescriptorSet writeDescriptor[MO_FRAME_COUNT] = {};
-        for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
-        {
-            imageDescriptor[i].sampler = renderbuffer->renderSampler;
-            imageDescriptor[i].imageView = swapChain->images[MO_FRAME_COUNT-i-1].view;
-            imageDescriptor[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            writeDescriptor[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptor[i].dstSet = registration.descriptorSet[i];
-            writeDescriptor[i].dstBinding = 0;
-            writeDescriptor[i].descriptorCount = 1;
-            writeDescriptor[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            writeDescriptor[i].pImageInfo = &imageDescriptor[i];
-        }
-        vkUpdateDescriptorSets(g_Device->device, 2, writeDescriptor, 0, VK_NULL_HANDLE);
-    }
-
-    carray_push_back(&renderbuffer->pRegistrations, &renderbuffer->registrationCount, registration);
-}
-
-void moDestroyRenderbuffer(MoRenderbuffer renderbuffer)
-{
-    for (std::uint32_t i = 0; i < renderbuffer->registrationCount; ++i)
-    {
-        vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, MO_FRAME_COUNT, renderbuffer->pRegistrations[i].descriptorSet);
-    }
-    vkDestroySampler(g_Device->device, renderbuffer->renderSampler, VK_NULL_HANDLE);
-    carray_free(renderbuffer->pRegistrations, &renderbuffer->registrationCount);
-    delete renderbuffer;
-}
-
-void moBindRenderbuffer(VkCommandBuffer commandBuffer, MoRenderbuffer renderbuffer, VkPipelineLayout pipelineLayout, std::uint32_t frameIndex)
-{
-    for (std::uint32_t i = 0; i < renderbuffer->registrationCount; ++i)
-    {
-        if (renderbuffer->pRegistrations[i].pipelineLayout == pipelineLayout)
-        {
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, MO_RENDER_DESC_LAYOUT, 1, &renderbuffer->pRegistrations[i].descriptorSet[frameIndex], 0, VK_NULL_HANDLE);
-            break;
-        }
-    }
 }
 
 /*

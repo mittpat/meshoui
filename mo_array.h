@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdlib>
 
 static std::uint32_t carray_nextPowerOfTwo(std::uint32_t v)
 {

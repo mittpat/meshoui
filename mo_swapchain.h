@@ -11,7 +11,6 @@
 #define MO_FRAME_COUNT 2
 
 typedef struct MoSwapChainCreateInfo {
-    MoDevice                     device;
     VkSurfaceKHR                 surface;
     VkSurfaceFormatKHR           surfaceFormat;
     VkExtent2D                   extent;
@@ -48,10 +47,7 @@ void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuf
 VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaphore);
 
 // free swap chain, command and swap buffers
-void moDestroySwapChain(MoDevice device, MoSwapChain swapChain);
-
-// readback a framebuffer
-void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool);
+void moDestroySwapChain(MoSwapChain swapChain);
 
 typedef struct MoRenderbufferRegistration {
     VkPipelineLayout pipelineLayout;
@@ -66,13 +62,16 @@ typedef struct MoRenderbuffer_T {
 
 void moCreateRenderbuffer(MoRenderbuffer *pRenderbuffer);
 
-void moRecreateRenderbuffer(MoRenderbuffer renderbuffer);
+void moReregisterRenderbuffer(MoSwapChain swapChain, MoRenderbuffer renderbuffer);
 
 void moRegisterRenderbuffer(MoSwapChain swapChain, MoPipelineLayout pipeline, MoRenderbuffer renderbuffer);
 
 void moDestroyRenderbuffer(MoRenderbuffer renderbuffer);
 
 void moBindRenderbuffer(VkCommandBuffer commandBuffer, MoRenderbuffer renderbuffer, VkPipelineLayout pipelineLayout, uint32_t frameIndex);
+
+// readback a framebuffer
+void moFramebufferReadback(VkImage source, VkExtent2D extent, std::uint8_t* pDestination, uint32_t destinationSize, VkCommandPool commandPool);
 
 /*
 ------------------------------------------------------------------------------

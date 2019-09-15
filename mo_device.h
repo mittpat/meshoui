@@ -70,12 +70,6 @@ void moCreateDevice(MoDeviceCreateInfo* pCreateInfo, MoDevice* pDevice);
 // free device
 void moDestroyDevice(MoDevice device);
 
-// set global handles and create default phong pipeline
-void moGlobalInit(MoInitInfo* pInfo);
-
-// free default phong pipeline and clear global handles
-void moGlobalShutdown();
-
 /*
 ------------------------------------------------------------------------------
 This software is available under 2 licenses -- choose whichever you prefer.

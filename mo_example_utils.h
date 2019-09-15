@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 #include <linalg.h>
 
@@ -20,9 +21,42 @@ static void moVkCheckResult(VkResult err)
         abort();
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL moVkDebugReport(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT objectType, uint64_t, size_t, int32_t, const char*, const char* pMessage, void*)
+static VKAPI_ATTR VkBool32 VKAPI_CALL moVkDebugReport(
+    VkDebugReportFlagsEXT flags,
+    VkDebugReportObjectTypeEXT,
+    uint64_t,
+    size_t,
+    int32_t messageCode,
+    const char* pLayerPrefix,
+    const char* pMessage,
+    void*)
 {
-    printf("[vulkan] ObjectType: %i\nMessage: %s\n\n", objectType, pMessage);
+    std::string prefix;
+
+    if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+    {
+        prefix += "ERROR:";
+    };
+    if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+    {
+        prefix += "WARNING:";
+    };
+    if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+    {
+        prefix += "PERFORMANCE:";
+    };
+    if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+    {
+        prefix += "INFO:";
+    }
+    if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+    {
+        prefix += "DEBUG:";
+    }
+
+    fprintf(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ? stderr : stdout, "%s [%s] Code %d : %s\n", prefix.c_str(), pLayerPrefix, messageCode, pMessage);
+    fflush(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ? stderr : stdout);
+
     return VK_FALSE;
 }
 

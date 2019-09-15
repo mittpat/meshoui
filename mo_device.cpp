@@ -1,4 +1,5 @@
 #include "mo_device.h"
+#include "mo_array.h"
 #include "mo_buffer.h"
 #include "mo_swapchain.h"
 
@@ -45,7 +46,9 @@ void moCreateInstance(MoInstanceCreateInfo *pCreateInfo, VkInstance *pInstance)
             // Setup the debug report callback
             VkDebugReportCallbackCreateInfoEXT debug_report_ci = {};
             debug_report_ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-            debug_report_ci.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+            debug_report_ci.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+                    //VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
+                    VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
             debug_report_ci.pfnCallback = pCreateInfo->pDebugReportCallback;
             debug_report_ci.pUserData = VK_NULL_HANDLE;
             err = vkCreateDebugReportCallbackEXT(*pInstance, &debug_report_ci, VK_NULL_HANDLE, &g_DebugReport);
@@ -68,11 +71,8 @@ void moDestroyInstance(VkInstance instance)
         auto vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
         vkDestroyDebugReportCallbackEXT(instance, g_DebugReport, VK_NULL_HANDLE);
     }
-    else
-    {
-        vkDestroyInstance(instance, VK_NULL_HANDLE);
-    }
 
+    vkDestroyInstance(instance, VK_NULL_HANDLE);
     g_Instance = VK_NULL_HANDLE;
 }
 
@@ -214,59 +214,6 @@ void moDestroyDevice(MoDevice device)
     delete device;
 
     g_Device = VK_NULL_HANDLE;
-}
-
-void moExternalInit(MoInitInfo *pInfo)
-{
-    g_Instance = pInfo->instance;
-    g_Device = new MoDevice_T;
-    *g_Device = {};
-    g_Device->memoryAlignment = 256;
-    g_Device->physicalDevice = pInfo->physicalDevice;
-    g_Device->device = pInfo->device;
-    g_Device->queueFamily = pInfo->queueFamily;
-    g_Device->queue = pInfo->queue;
-    g_Device->pCheckVkResultFn = pInfo->pCheckVkResultFn;
-    g_Device->descriptorPool = pInfo->descriptorPool;
-    g_SwapChain = new MoSwapChain_T;
-    *g_SwapChain = {};
-    g_SwapChain->depthBuffer = pInfo->depthBuffer;
-    g_SwapChain->swapChainKHR = pInfo->swapChainKHR;
-    g_SwapChain->renderPass = pInfo->renderPass;
-    g_SwapChain->extent = pInfo->extent;
-    for (uint32_t i = 0; i < pInfo->swapChainCommandBufferCount; ++i)
-    {
-        g_SwapChain->frames[i].pool = pInfo->pSwapChainCommandBuffers[i].pool;
-        g_SwapChain->frames[i].buffer = pInfo->pSwapChainCommandBuffers[i].buffer;
-        g_SwapChain->frames[i].fence = pInfo->pSwapChainCommandBuffers[i].fence;
-        g_SwapChain->frames[i].acquired = pInfo->pSwapChainCommandBuffers[i].acquired;
-        g_SwapChain->frames[i].complete = pInfo->pSwapChainCommandBuffers[i].complete;
-    }
-    for (uint32_t i = 0; i < pInfo->swapChainSwapBufferCount; ++i)
-    {
-        g_SwapChain->images[i].back = pInfo->pSwapChainSwapBuffers[i].back;
-        g_SwapChain->images[i].view = pInfo->pSwapChainSwapBuffers[i].view;
-        g_SwapChain->images[i].front = pInfo->pSwapChainSwapBuffers[i].front;
-        g_SwapChain->images[i].memory = pInfo->pSwapChainSwapBuffers[i].memory;
-    }
-}
-
-void moExternalShutdown()
-{
-    g_Instance = VK_NULL_HANDLE;
-    g_Device->physicalDevice = VK_NULL_HANDLE;
-    g_Device->device = VK_NULL_HANDLE;
-    g_Device->queueFamily = -1;
-    g_Device->queue = VK_NULL_HANDLE;
-    g_Device->memoryAlignment = 256;
-    g_SwapChain->swapChainKHR = VK_NULL_HANDLE;
-    g_SwapChain->renderPass = VK_NULL_HANDLE;
-    g_SwapChain->extent = {0, 0};
-    g_Device->descriptorPool = VK_NULL_HANDLE;
-    delete g_Device;
-    delete g_SwapChain;
-    g_Device = VK_NULL_HANDLE;
-    g_SwapChain = VK_NULL_HANDLE;
 }
 
 /*

@@ -82,7 +82,6 @@ int main(int argc, char** argv)
             surfaceFormat.format = VK_FORMAT_R8G8B8A8_UNORM;
 
             MoSwapChainCreateInfo info = {};
-            info.device = device;
             info.surfaceFormat = surfaceFormat;
             info.extent = {(uint32_t)width, (uint32_t)height};
             info.vsync = VK_TRUE;
@@ -198,7 +197,7 @@ int main(int argc, char** argv)
     moDestroyPipelineLayout(pipelineLayout);
 
     // Cleanup
-    moDestroySwapChain(device, swapChain);
+    moDestroySwapChain(swapChain);
     moDestroyDevice(device);
     moDestroyInstance(instance);
 
