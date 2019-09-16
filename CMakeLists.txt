@@ -55,3 +55,6 @@ target_link_libraries(cube_passthrough PUBLIC meshoui glfw)
 
 add_executable(cube_imgui examples/cube_imgui/main.cpp)
 target_link_libraries(cube_imgui PUBLIC meshoui glfw imgui)
+
+add_executable(material_viewer examples/material_viewer/main.cpp)
+target_link_libraries(material_viewer PUBLIC meshoui glfw rapidjson)

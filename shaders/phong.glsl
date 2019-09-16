@@ -25,9 +25,9 @@ void main()
     outData.vertex = vec3(pc.uniformModel * vec4(vertexPosition, 1.0));
     outData.normal = normalize(mat3(transpose(inverse(pc.uniformModel))) * vertexNormal);
     outData.texcoord = vertexTexcoord;
-    vec3 T = normalize(vec3(mat3(pc.uniformModel) * vertexTangent));
-    vec3 B = normalize(vec3(mat3(pc.uniformModel) * vertexBitangent));
-    vec3 N = normalize(vec3(mat3(pc.uniformModel) * vertexNormal));
+    vec3 T = normalize(mat3(pc.uniformModel) * vertexTangent);
+    vec3 B = normalize(mat3(pc.uniformModel) * vertexBitangent);
+    vec3 N = normalize(mat3(pc.uniformModel) * vertexNormal);
     outData.TBN = mat3(T, B, N);
     gl_Position = pc.uniformProjection * pc.uniformView * pc.uniformModel * vec4(vertexPosition, 1.0);
 }
@@ -55,24 +55,27 @@ layout(set = 1, binding = 4) uniform sampler2D uniformTextureEmissive;
 
 void main()
 {
-    vec2 texcoord = vec2(inData.texcoord.s, inData.texcoord.t);
-    vec4 textureAmbient = texture(uniformTextureAmbient, texcoord);
-    vec4 textureDiffuse = texture(uniformTextureDiffuse, texcoord);
-    fragment = vec4(textureAmbient.rgb * textureDiffuse.rgb, textureDiffuse.a);
+    vec4 textureAmbient = texture(uniformTextureAmbient, inData.texcoord);
+    vec4 textureDiffuse = texture(uniformTextureDiffuse, inData.texcoord);
+    vec4 textureSpecular = texture(uniformTextureSpecular, inData.texcoord);
+    vec4 textureNormal = texture(uniformTextureNormal, inData.texcoord);
 
-    vec4 textureNormal = texture(uniformTextureNormal, texcoord);
     // discard textureNormal when ~= (0,0,0)
-    vec3 textureNormal_worldspace = length(textureNormal) > 0.1 ? normalize(inData.TBN * (2.0 * textureNormal.rgb - 1.0)) : inData.normal;
-    vec3 lightDirection_worldspace = normalize(uniformData.lightPosition - inData.vertex);
-    float diffuseFactor = dot(textureNormal_worldspace, lightDirection_worldspace);
+    vec3 normal = length(textureNormal) > 0.1 ? inData.TBN * normalize(2.0 * vec3(textureNormal.x, 1.0 - textureNormal.y, textureNormal.z) - 1.0) : inData.normal;
+    vec3 viewDir = normalize(uniformData.viewPosition - inData.vertex);
+    vec3 lightDir = normalize(uniformData.lightPosition - inData.vertex);
+
+    const float kPi = 3.14159265;
+    const float kShininess = 16.0;
+    const float kEnergyConservation = ( 8.0 + kShininess ) / ( 8.0 * kPi );
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = kEnergyConservation * pow(max(dot(normal, halfwayDir), 0.0), kShininess);
+
+    fragment = vec4(textureAmbient.rgb * textureDiffuse.rgb, textureDiffuse.a);
+    float diffuseFactor = dot(normal, lightDir);
     if (diffuseFactor > 0.0)
     {
-        vec3 eyeDirection_worldspace = normalize(uniformData.viewPosition - inData.vertex);
-        vec3 reflectDirection_worldspace = reflect(-lightDirection_worldspace, textureNormal_worldspace);
-
-        float specularFactor = pow(max(dot(eyeDirection_worldspace, reflectDirection_worldspace), 0.0), 8.0);
-        vec4 textureSpecular = texture(uniformTextureSpecular, texcoord);
-        fragment += vec4(diffuseFactor * textureDiffuse.rgb + specularFactor * textureSpecular.rgb, 0.0);
+        fragment += vec4(diffuseFactor * textureDiffuse.rgb + spec * textureSpecular.rgb, 0.0);
     }
 }
 #endif

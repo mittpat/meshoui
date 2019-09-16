@@ -91,9 +91,10 @@ void moCreateDemoCube(MoMesh *pMesh, const linalg::aliases::float3 & halfExtents
     moCreateMesh(&meshInfo, pMesh);
 }
 
-void moUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sphere_positions, std::vector<uint32_t> & sphere_indices)
+void moUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sphere_positions, std::vector<uint32_t> & sphere_indices, std::vector<float2> & sphere_texcoords)
 {
     sphere_positions.push_back({0.0f, 1.0f, 0.0f});
+    sphere_texcoords.push_back({0.0f, 0.0f});
     for (uint32_t j = 0; j < parallels - 1; ++j)
     {
         float const polar = 355.0f/113.0f * float(j+1) / float(parallels);
@@ -108,9 +109,11 @@ void moUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sp
             float const y = cp;
             float const z = sp * sa;
             sphere_positions.push_back({x, y, z});
+            sphere_texcoords.push_back({float(i)/(0.5 * meridians),float(j)/(parallels - 1)});
         }
     }
     sphere_positions.push_back({0.0f, -1.0f, 0.0f});
+    sphere_texcoords.push_back({0.0f, 1.0f});
 
     for (uint32_t i = 0; i < meridians; ++i)
     {
@@ -151,19 +154,19 @@ void moUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sp
     }
 }
 
-void moCreateDemoSphere(MoMesh *pMesh)
+void moCreateDemoSphere(MoMesh *pMesh, float radius)
 {
-    static float2 sphere_texcoords[] = {{ 0.0f, 0.0f }};
+    std::vector<float2> sphere_texcoords;
     std::vector<float3> sphere_positions;
     std::vector<uint32_t> sphere_indices;
-    moUVSphere(64, 32, sphere_positions, sphere_indices);
+    moUVSphere(64, 32, sphere_positions, sphere_indices, sphere_texcoords);
     const std::vector<float3> & sphere_normals = sphere_positions;
 
     std::vector<mat<unsigned,3,3>> sphere_triangles;
     for (uint32_t i = 0; i < sphere_indices.size(); i+=3)
     {
         sphere_triangles.push_back({uint3{sphere_indices[i+0], sphere_indices[i+1], sphere_indices[i+2]},
-                                    uint3{0,0,0},
+                                    uint3{sphere_indices[i+0], sphere_indices[i+1], sphere_indices[i+2]},
                                     uint3{sphere_indices[i+0], sphere_indices[i+1], sphere_indices[i+2]}});
     }
 
@@ -177,9 +180,9 @@ void moCreateDemoSphere(MoMesh *pMesh)
 //INDICES_COUNT_FROM_ONE
     for (const auto & triangle : sphere_triangles)
     {
-        vertexPositions.push_back(sphere_positions[triangle.x.x]);vertexTexcoords.push_back(sphere_texcoords[triangle.y.x]); vertexNormals.push_back(sphere_normals[triangle.z.x]); vertexTangents.push_back({1.0f, 0.0f, 0.0f}); vertexBitangents.push_back({0.0f, 0.0f, 1.0f}); indices.push_back((uint32_t)vertexPositions.size() - 1);
-        vertexPositions.push_back(sphere_positions[triangle.x.y]); vertexTexcoords.push_back(sphere_texcoords[triangle.y.y]); vertexNormals.push_back(sphere_normals[triangle.z.y]); vertexTangents.push_back({1.0f, 0.0f, 0.0f}); vertexBitangents.push_back({0.0f, 0.0f, 1.0f}); indices.push_back((uint32_t)vertexPositions.size() - 1);
-        vertexPositions.push_back(sphere_positions[triangle.x.z]); vertexTexcoords.push_back(sphere_texcoords[triangle.y.z]); vertexNormals.push_back(sphere_normals[triangle.z.z]); vertexTangents.push_back({1.0f, 0.0f, 0.0f}); vertexBitangents.push_back({0.0f, 0.0f, 1.0f}); indices.push_back((uint32_t)vertexPositions.size() - 1);
+        vertexPositions.push_back(radius * sphere_positions[triangle.x.x]); vertexTexcoords.push_back(sphere_texcoords[triangle.y.x]); vertexNormals.push_back(sphere_normals[triangle.z.x]); vertexTangents.push_back({1.0f, 0.0f, 0.0f}); vertexBitangents.push_back({0.0f, 0.0f, 1.0f}); indices.push_back((uint32_t)vertexPositions.size() - 1);
+        vertexPositions.push_back(radius * sphere_positions[triangle.x.y]); vertexTexcoords.push_back(sphere_texcoords[triangle.y.y]); vertexNormals.push_back(sphere_normals[triangle.z.y]); vertexTangents.push_back({1.0f, 0.0f, 0.0f}); vertexBitangents.push_back({0.0f, 0.0f, 1.0f}); indices.push_back((uint32_t)vertexPositions.size() - 1);
+        vertexPositions.push_back(radius * sphere_positions[triangle.x.z]); vertexTexcoords.push_back(sphere_texcoords[triangle.y.z]); vertexNormals.push_back(sphere_normals[triangle.z.z]); vertexTangents.push_back({1.0f, 0.0f, 0.0f}); vertexBitangents.push_back({0.0f, 0.0f, 1.0f}); indices.push_back((uint32_t)vertexPositions.size() - 1);
     }
     for (uint32_t index = 0; index < indices.size(); index+=3)
     {

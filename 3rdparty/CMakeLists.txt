@@ -23,7 +23,6 @@ set(INJECT_DEBUG_POSTFIX OFF)
 set(IGNORE_GIT_HASH ON)
 add_subdirectory(assimp)
 set_target_properties(assimp PROPERTIES COMPILE_FLAGS -g0)
-target_include_directories(assimp PUBLIC assimp/contrib)
 
 # glfw
 set(FOO_BUILD_SHARED OFF)
@@ -118,6 +117,10 @@ target_compile_definitions(imgui PUBLIC -DIMGUI_IMPL_API=)
 # linalg
 add_library(linalg INTERFACE)
 target_include_directories(linalg INTERFACE linalg)
+
+# rapidjson
+add_library(rapidjson INTERFACE)
+target_include_directories(rapidjson INTERFACE assimp/contrib/rapidjson/include)
 
 # stb
 add_library(stb INTERFACE)
