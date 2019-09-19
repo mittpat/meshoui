@@ -91,43 +91,72 @@ void moCreateDemoCube(MoMesh *pMesh, const linalg::aliases::float3 & halfExtents
     moCreateMesh(&meshInfo, pMesh);
 }
 
-void moUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sphere_positions, std::vector<uint32_t> & sphere_indices, std::vector<float2> & sphere_texcoords)
+void moCreateUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sphere_positions, std::vector<uint32_t> & sphere_indices, std::vector<float2> & sphere_texcoords)
 {
-    sphere_positions.push_back({0.0f, 1.0f, 0.0f});
-    sphere_texcoords.push_back({0.0f, 0.0f});
-    for (uint32_t j = 0; j < parallels - 1; ++j)
+    const float MO_PI = 355.0f/113.0f;
+
+    meridians++;
+    parallels += 2;
+
+    for (uint32_t i = 0; i < meridians; ++i)
     {
-        float const polar = 355.0f/113.0f * float(j+1) / float(parallels);
+        sphere_positions.push_back({0, 1, 0});
+        if (i == meridians - 1)
+        {
+            sphere_texcoords.push_back({1,0});
+        }
+        else
+        {
+            sphere_texcoords.push_back({float(i) / meridians,0});
+        }
+    }
+
+    for (uint32_t j = 1; j < parallels - 2; ++j)
+    {
+        float const polar = MO_PI * float(j + 1) / parallels;
         float const sp = std::sin(polar);
         float const cp = std::cos(polar);
         for (uint32_t i = 0; i < meridians; ++i)
         {
-            float const azimuth = 2.0f * 355.0f/113.0f * float(i) / float(meridians);
-            float const sa = std::sin(azimuth);
-            float const ca = std::cos(azimuth);
-            float const x = sp * ca;
-            float const y = cp;
-            float const z = sp * sa;
-            sphere_positions.push_back({x, y, z});
-            sphere_texcoords.push_back({float(i)/(0.5 * meridians),float(j)/(parallels - 1)});
+            if (i == meridians - 1)
+            {
+                float const x = sp;
+                float const y = cp;
+                sphere_positions.push_back({x, y, 0});
+                sphere_texcoords.push_back({1, float(j) / (parallels - 1)});
+            }
+            else
+            {
+                float const azimuth = 2.0f * MO_PI * float(i) / meridians;
+                float const sa = std::sin(azimuth);
+                float const ca = std::cos(azimuth);
+                float const x = sp * ca;
+                float const y = cp;
+                float const z = sp * sa;
+                sphere_positions.push_back({x, y, z});
+                sphere_texcoords.push_back({float(i) / meridians, float(j) / (parallels - 1)});
+            }
         }
     }
-    sphere_positions.push_back({0.0f, -1.0f, 0.0f});
-    sphere_texcoords.push_back({0.0f, 1.0f});
 
     for (uint32_t i = 0; i < meridians; ++i)
     {
-        uint32_t const a = i + 1;
-        uint32_t const b = (i + 1) % meridians + 1;
-        sphere_indices.emplace_back(0);
-        sphere_indices.emplace_back(b);
-        sphere_indices.emplace_back(a);
+        sphere_positions.push_back({0, -1, 0});
+        if (i == meridians - 1)
+        {
+            sphere_texcoords.push_back({1,1});
+        }
+        else
+        {
+            sphere_texcoords.push_back({float(i) / meridians, 1});
+        }
     }
 
+    // indices
     for (uint32_t j = 0; j < parallels - 2; ++j)
     {
-        uint32_t aStart = j * meridians + 1;
-        uint32_t bStart = (j + 1) * meridians + 1;
+        uint32_t aStart = j * meridians;
+        uint32_t bStart = (j + 1) * meridians;
         for (uint32_t i = 0; i < meridians; ++i)
         {
             const uint32_t a = aStart + i;
@@ -143,15 +172,6 @@ void moUVSphere(uint32_t meridians, uint32_t parallels, std::vector<float3> & sp
             sphere_indices.emplace_back(b);
         }
     }
-
-    for (uint32_t i = 0; i < meridians; ++i)
-    {
-        uint32_t const a = i + meridians * (parallels - 2) + 1;
-        uint32_t const b = (i + 1) % meridians + meridians * (parallels - 2) + 1;
-        sphere_indices.emplace_back(sphere_positions.size() - 1);
-        sphere_indices.emplace_back(a);
-        sphere_indices.emplace_back(b);
-    }
 }
 
 void moCreateDemoSphere(MoMesh *pMesh, float radius)
@@ -159,7 +179,7 @@ void moCreateDemoSphere(MoMesh *pMesh, float radius)
     std::vector<float2> sphere_texcoords;
     std::vector<float3> sphere_positions;
     std::vector<uint32_t> sphere_indices;
-    moUVSphere(64, 32, sphere_positions, sphere_indices, sphere_texcoords);
+    moCreateUVSphere(64, 32, sphere_positions, sphere_indices, sphere_texcoords);
     const std::vector<float3> & sphere_normals = sphere_positions;
 
     std::vector<mat<unsigned,3,3>> sphere_triangles;
@@ -177,7 +197,6 @@ void moCreateDemoSphere(MoMesh *pMesh, float radius)
     std::vector<float3> vertexNormals;
     std::vector<float3> vertexTangents;
     std::vector<float3> vertexBitangents;
-//INDICES_COUNT_FROM_ONE
     for (const auto & triangle : sphere_triangles)
     {
         vertexPositions.push_back(radius * sphere_positions[triangle.x.x]); vertexTexcoords.push_back(sphere_texcoords[triangle.y.x]); vertexNormals.push_back(sphere_normals[triangle.z.x]); vertexTangents.push_back({1.0f, 0.0f, 0.0f}); vertexBitangents.push_back({0.0f, 0.0f, 1.0f}); indices.push_back((uint32_t)vertexPositions.size() - 1);

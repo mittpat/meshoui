@@ -22,10 +22,11 @@
 #include <functional>
 
 #include <rapidjson/document.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/filereadstream.h>
 #include <rapidjson/encodedstream.h>
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/istreamwrapper.h>
 #include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 namespace std { namespace filesystem = experimental::filesystem; }
 using namespace linalg;
@@ -283,10 +284,9 @@ int main(int argc, char** argv)
     MoMaterial bricksMaterial;
     {
         std::ifstream fileStream("resources/bricks.json");
-        std::vector<char> marbleDefinition = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-
+        rapidjson::IStreamWrapper fileStreamWrapper(fileStream);
         rapidjson::Document document;
-        document.Parse(marbleDefinition.data());
+        document.ParseStream(fileStreamWrapper);
 
         MoMaterialCreateInfo info = {};
         info.commandBuffer = swapChain->frames[0].buffer;
@@ -307,10 +307,9 @@ int main(int argc, char** argv)
     MoMaterial marbleMaterial;
     {
         std::ifstream fileStream("resources/marble.json");
-        std::vector<char> marbleDefinition = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-
+        rapidjson::IStreamWrapper fileStreamWrapper(fileStream);
         rapidjson::Document document;
-        document.Parse(marbleDefinition.data());
+        document.ParseStream(fileStreamWrapper);
 
         MoMaterialCreateInfo info = {};
         info.commandBuffer = swapChain->frames[0].buffer;
