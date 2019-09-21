@@ -15,7 +15,7 @@ layout(set = 2, binding = 0) uniform sampler2D uniformPreviousFramebuffer;
 void main()
 {
     vec4 previousFramebuffer = texture(uniformPreviousFramebuffer, gl_FragCoord.xy / textureSize(uniformPreviousFramebuffer, 0));
-    vec4 currentFramebuffer = vec4(1);
+    vec4 currentFramebuffer = vec4(1,0,0,1);
     fragment = previousFramebuffer * 254/255.0 + currentFramebuffer * 2/255.0;
     fragment = clamp(fragment, vec4(0,0,0,1), currentFramebuffer);
 }

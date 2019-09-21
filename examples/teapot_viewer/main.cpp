@@ -3,6 +3,7 @@
 
 #include "mo_device.h"
 #include "mo_example_utils.h"
+#include "mo_glfw_utils.h"
 #include "mo_material.h"
 #include "mo_mesh.h"
 #include "mo_mesh_utils.h"
@@ -19,117 +20,6 @@
 namespace std { namespace filesystem = experimental::filesystem; }
 using namespace linalg;
 using namespace linalg::aliases;
-
-struct MoInputs
-{
-    bool up;
-    bool down;
-    bool left;
-    bool right;
-    bool forward;
-    bool backward;
-    bool leftButton;
-    bool rightButton;
-    double xpos, ypos;
-    double dxpos, dypos;
-};
-
-static void glfwKeyCallback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
-{
-    MoInputs* inputs = (MoInputs*)glfwGetWindowUserPointer(window);
-    if (action == GLFW_PRESS)
-    {
-        switch (key)
-        {
-        case GLFW_KEY_ESCAPE:
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-            break;
-        case GLFW_KEY_Q:
-            inputs->up = true;
-            break;
-        case GLFW_KEY_E:
-            inputs->down = true;
-            break;
-        case GLFW_KEY_W:
-            inputs->forward = true;
-            break;
-        case GLFW_KEY_A:
-            inputs->left = true;
-            break;
-        case GLFW_KEY_S:
-            inputs->backward = true;
-            break;
-        case GLFW_KEY_D:
-            inputs->right = true;
-            break;
-        }
-    }
-    if (action == GLFW_RELEASE)
-    {
-        switch (key)
-        {
-        case GLFW_KEY_Q:
-            inputs->up = false;
-            break;
-        case GLFW_KEY_E:
-            inputs->down = false;
-            break;
-        case GLFW_KEY_W:
-            inputs->forward = false;
-            break;
-        case GLFW_KEY_A:
-            inputs->left = false;
-            break;
-        case GLFW_KEY_S:
-            inputs->backward = false;
-            break;
-        case GLFW_KEY_D:
-            inputs->right = false;
-            break;
-        }
-    }
-}
-
-static void glfwMouseCallback(GLFWwindow *window, int button, int action, int /*mods*/)
-{
-    MoInputs* inputs = (MoInputs*)glfwGetWindowUserPointer(window);
-    if (action == GLFW_PRESS)
-    {
-        switch (button)
-        {
-        case GLFW_MOUSE_BUTTON_LEFT:
-            inputs->leftButton = true;
-            break;
-        case GLFW_MOUSE_BUTTON_RIGHT:
-            inputs->rightButton = true;
-            break;
-        }
-    }
-    else if (action == GLFW_RELEASE)
-    {
-        switch (button)
-        {
-        case GLFW_MOUSE_BUTTON_LEFT:
-            inputs->leftButton = false;
-            break;
-        case GLFW_MOUSE_BUTTON_RIGHT:
-            inputs->rightButton = false;
-            break;
-        }
-    }
-}
-
-static void glfwPollMouse(GLFWwindow *window)
-{
-    MoInputs* inputs = (MoInputs*)glfwGetWindowUserPointer(window);
-
-    double xpos, ypos;
-    glfwGetCursorPos(window, &xpos, &ypos);
-    inputs->dxpos = xpos - inputs->xpos;
-    inputs->dypos = ypos - inputs->ypos;
-    inputs->xpos = xpos;
-    inputs->ypos = ypos;
-}
 
 struct MoLight
 {
@@ -182,10 +72,7 @@ int main(int argc, char** argv)
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, width, height, GLFW_DONT_CARE);
 #endif
-        glfwGetCursorPos(window, &inputs.xpos, &inputs.ypos);
-        glfwSetWindowUserPointer(window, &inputs);
-        glfwSetKeyCallback(window, glfwKeyCallback);
-        glfwSetMouseButtonCallback(window, glfwMouseCallback);
+        moInitInputs(window, &inputs);
         if (!glfwVulkanSupported()) printf("GLFW: Vulkan Not Supported\n");
 
         // Create Vulkan instance
@@ -264,45 +151,22 @@ int main(int argc, char** argv)
         moCreateMaterial(&info, &domeMaterial);
         moRegisterMaterial(pipelineLayout, domeMaterial);
     }
+
     MoCamera camera{"__default_camera", {0.f, 10.f, 30.f}, 0.f, 0.f};
     MoLight light{"__default_light", translation_matrix(float3{-300.f, 300.f, 150.f})};
     MoScene scene = {};
-
-    std::filesystem::path fileToLoad = "resources/teapot.dae";
+    moCreateScene(swapChain->frames[0], "resources/teapot.dae", &scene);
+    for (std::uint32_t i = 0; i < scene->materialCount; ++i)
+    {
+        moRegisterMaterial(pipelineLayout, scene->pMaterials[i]);
+    }
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        glfwPollMouse(window);
-
-        if (!fileToLoad.empty())
-        {
-            moCreateScene(swapChain->frames[0], fileToLoad.c_str(), &scene);
-            for (std::uint32_t i = 0; i < scene->materialCount; ++i)
-            {
-                moRegisterMaterial(pipelineLayout, scene->pMaterials[i]);
-            }
-            fileToLoad = "";
-        }
-
-        {
-            const float speed = 0.5f;
-            float3 forward = mul(camera.model(), {0.f,0.f,-1.f,0.f}).xyz();
-            float3 up = mul(camera.model(), {0.f,1.f,0.f,0.f}).xyz();
-            float3 right = mul(camera.model(), {1.f,0.f,0.f,0.f}).xyz();
-            if (inputs.up) camera.position += up * speed;
-            if (inputs.down) camera.position -= up * speed;
-            if (inputs.forward) camera.position += forward * speed;
-            if (inputs.backward) camera.position -= forward * speed;
-            if (inputs.left) camera.position -= right * speed;
-            if (inputs.right) camera.position += right * speed;
-            if (inputs.leftButton)
-            {
-                camera.yaw += inputs.dxpos * 0.005;
-                camera.pitch -= inputs.dypos * 0.005;
-            }
-        }
+        moPollMouse(window);
+        moInputTransform(&inputs, &camera);
 
         // Frame begin
         MoCommandBuffer currentCommandBuffer;

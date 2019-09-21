@@ -7,11 +7,6 @@
 
 #include <linalg.h>
 
-static void moGlfwErrorCallback(int, const char* description)
-{
-    printf("GLFW Error: %s\n", description);
-}
-
 static void moVkCheckResult(VkResult err)
 {
     if (err == 0) return;

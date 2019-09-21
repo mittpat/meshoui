@@ -116,24 +116,18 @@ int main(int argc, char** argv)
     }
     MoCamera camera{"__default_camera", {0.f, 10.f, 30.f}, 0.f, 0.f};
     MoLight light{"__default_light", translation_matrix(float3{-300.f, 300.f, 150.f})};
-    MoScene scene = {};
 
-    std::filesystem::path fileToLoad = "resources/teapot.dae";
+    MoScene scene = {};
+    moCreateScene(swapChain->frames[0], "resources/teapot.dae", &scene);
+    for (std::uint32_t i = 0; i < scene->materialCount; ++i)
+    {
+        moRegisterMaterial(pipelineLayout, scene->pMaterials[i]);
+    }
 
     std::vector<std::uint8_t> readback;
 
     // one frame
     {
-        if (!fileToLoad.empty())
-        {
-            moCreateScene(swapChain->frames[frameIndex], fileToLoad.c_str(), &scene);
-            for (std::uint32_t i = 0; i < scene->materialCount; ++i)
-            {
-                moRegisterMaterial(pipelineLayout, scene->pMaterials[i]);
-            }
-            fileToLoad = "";
-        }
-
         // Frame begin
         MoCommandBuffer currentCommandBuffer;
         VkSemaphore imageAcquiredSemaphore;

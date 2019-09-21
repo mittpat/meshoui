@@ -6,6 +6,7 @@
 
 #include "mo_device.h"
 #include "mo_example_utils.h"
+#include "mo_glfw_utils.h"
 #include "mo_mesh.h"
 #include "mo_mesh_utils.h"
 #include "mo_pipeline.h"
