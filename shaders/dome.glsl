@@ -1,5 +1,13 @@
 #version 450 core
 
+layout(std140, binding = 0) uniform Block
+{
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform vec3 cameraPosition;
+    uniform vec3 lightPosition;
+} uniformData;
+
 #ifdef COMPILING_VERTEX
 layout(location=0) out VertexData
 {
@@ -12,15 +20,13 @@ layout(location = 3) in vec3 vertexTangent;
 layout(location = 4) in vec3 vertexBitangent;
 layout(push_constant) uniform uPushConstant
 {
-    mat4 uniformModel;
-    mat4 uniformView;
-    mat4 uniformProjection;
+    mat4 modelMatrix;
 } pc;
 
 void main()
 {
-    outData.vertex = vec3(pc.uniformModel * vec4(vertexPosition, 1.0));
-    gl_Position = pc.uniformProjection * pc.uniformView * pc.uniformModel * vec4(vertexPosition, 1.0);
+    outData.vertex = vec3(pc.modelMatrix * vec4(vertexPosition, 1.0));
+    gl_Position = uniformData.projectionMatrix * mat4(mat3(uniformData.viewMatrix)) * pc.modelMatrix * vec4(vertexPosition, 1.0);
 }
 #endif
 
@@ -30,11 +36,6 @@ layout(location = 0) in VertexData
 {
     vec3 vertex;
 } inData;
-layout(std140, binding = 0) uniform Block
-{
-    uniform vec3 viewPosition;
-    uniform vec3 lightPosition;
-} uniformData;
 layout(set = 1, binding = 0) uniform sampler2D uniformTextureAmbient;
 layout(set = 1, binding = 1) uniform sampler2D uniformTextureDiffuse;
 
@@ -45,7 +46,7 @@ void main()
     vec3 position = inData.vertex;
     position.y = abs(position.y);
 
-    vec3 sunPosition = normalize(uniformData.lightPosition - uniformData.viewPosition);
+    vec3 sunPosition = normalize(uniformData.lightPosition - uniformData.cameraPosition);
 
     float sunCircle = max(1.0 - (1.0 + 10.0 * sunPosition.y + position.y) * length(inData.vertex.xyz - sunPosition), 0.0);
     sunCircle += 0.3 * pow(1.0 - position.y, 12.0) * (1.6 - sunPosition.y);

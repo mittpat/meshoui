@@ -2,15 +2,7 @@
 
 #include "mo_pipeline.h"
 
-void moCreatePhongPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
-
-void moCreateDomePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
-
-void moCreatePassthroughPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
-
-void moCreatePhongBlurPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
-
-void moCreateUnwrapPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline);
+void moCreatePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, const char *glslFilename, VkPipeline *pPipeline, MoPipelineCreateFlags flags = MO_PIPELINE_FEATURE_DEFAULT);
 
 /*
 ------------------------------------------------------------------------------

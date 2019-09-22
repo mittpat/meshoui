@@ -1,120 +1,33 @@
 #include "mo_pipeline_utils.h"
 
+#include <experimental/filesystem>
 #include <fstream>
 #include <vector>
 
-void moCreatePhongPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
+namespace std { namespace filesystem = experimental::filesystem; }
+
+void moCreatePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, const char* glslFilename, VkPipeline *pPipeline, MoPipelineCreateFlags flags)
 {
     MoPipelineCreateInfo info = {};
-    info.flags = MO_PIPELINE_FEATURE_DEFAULT;
+    info.flags = flags;
+    info.pipelineLayout = pipelineLayout;
+    info.renderPass = renderPass;
     std::vector<char> mo_phong_shader_vert_spv;
     {
-        std::ifstream fileStream("phong.vert.spv", std::ifstream::binary);
+        std::filesystem::path glslFilepath(glslFilename);
+        std::ifstream fileStream(glslFilepath.replace_extension("vert.spv"), std::ifstream::binary);
         mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
     }
     std::vector<char> mo_phong_shader_frag_spv;
     {
-        std::ifstream fileStream("phong.frag.spv", std::ifstream::binary);
+        std::filesystem::path glslFilepath(glslFilename);
+        std::ifstream fileStream(glslFilepath.replace_extension("frag.spv"), std::ifstream::binary);
         mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
     }
     info.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
     info.vertexShaderSize = mo_phong_shader_vert_spv.size();
     info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
     info.fragmentShaderSize = mo_phong_shader_frag_spv.size();
-    info.pipelineLayout = pipelineLayout;
-    info.renderPass = renderPass;
-    moCreatePipeline(&info, pPipeline);
-}
-
-void moCreateDomePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
-{
-    MoPipelineCreateInfo info = {};
-    std::vector<char> mo_dome_shader_vert_spv;
-    {
-        std::ifstream fileStream("dome.vert.spv", std::ifstream::binary);
-        mo_dome_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    std::vector<char> mo_dome_shader_frag_spv;
-    {
-        std::ifstream fileStream("dome.frag.spv", std::ifstream::binary);
-        mo_dome_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    info.pVertexShader = (std::uint32_t*)mo_dome_shader_vert_spv.data();
-    info.vertexShaderSize = mo_dome_shader_vert_spv.size();
-    info.pFragmentShader = (std::uint32_t*)mo_dome_shader_frag_spv.data();
-    info.fragmentShaderSize = mo_dome_shader_frag_spv.size();
-    info.flags = MO_PIPELINE_FEATURE_NONE;
-    info.pipelineLayout = pipelineLayout;
-    info.renderPass = renderPass;
-    moCreatePipeline(&info, pPipeline);
-}
-
-void moCreatePassthroughPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
-{
-    MoPipelineCreateInfo info = {};
-    std::vector<char> mo_passthrough_shader_vert_spv;
-    {
-        std::ifstream fileStream("passthrough.vert.spv", std::ifstream::binary);
-        mo_passthrough_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    std::vector<char> mo_passthrough_shader_frag_spv;
-    {
-        std::ifstream fileStream("passthrough.frag.spv", std::ifstream::binary);
-        mo_passthrough_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    info.pVertexShader = (std::uint32_t*)mo_passthrough_shader_vert_spv.data();
-    info.vertexShaderSize = mo_passthrough_shader_vert_spv.size();
-    info.pFragmentShader = (std::uint32_t*)mo_passthrough_shader_frag_spv.data();
-    info.fragmentShaderSize = mo_passthrough_shader_frag_spv.size();
-    info.flags = MO_PIPELINE_FEATURE_NONE;
-    info.pipelineLayout = pipelineLayout;
-    info.renderPass = renderPass;
-    moCreatePipeline(&info, pPipeline);
-}
-
-void moCreatePhongBlurPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
-{
-    MoPipelineCreateInfo info = {};
-    info.flags = MO_PIPELINE_FEATURE_DEFAULT;
-    std::vector<char> mo_phong_shader_vert_spv;
-    {
-        std::ifstream fileStream("phong_blur.vert.spv", std::ifstream::binary);
-        mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    std::vector<char> mo_phong_shader_frag_spv;
-    {
-        std::ifstream fileStream("phong_blur.frag.spv", std::ifstream::binary);
-        mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    info.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
-    info.vertexShaderSize = mo_phong_shader_vert_spv.size();
-    info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();
-    info.fragmentShaderSize = mo_phong_shader_frag_spv.size();
-    info.pipelineLayout = pipelineLayout;
-    info.renderPass = renderPass;
-    moCreatePipeline(&info, pPipeline);
-}
-
-void moCreateUnwrapPipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline *pPipeline)
-{
-    MoPipelineCreateInfo info = {};
-    std::vector<char> mo_passthrough_shader_vert_spv;
-    {
-        std::ifstream fileStream("unwrap.vert.spv", std::ifstream::binary);
-        mo_passthrough_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    std::vector<char> mo_passthrough_shader_frag_spv;
-    {
-        std::ifstream fileStream("unwrap.frag.spv", std::ifstream::binary);
-        mo_passthrough_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    info.pVertexShader = (std::uint32_t*)mo_passthrough_shader_vert_spv.data();
-    info.vertexShaderSize = mo_passthrough_shader_vert_spv.size();
-    info.pFragmentShader = (std::uint32_t*)mo_passthrough_shader_frag_spv.data();
-    info.fragmentShaderSize = mo_passthrough_shader_frag_spv.size();
-    info.flags = MO_PIPELINE_FEATURE_NONE;
-    info.pipelineLayout = pipelineLayout;
-    info.renderPass = renderPass;
     moCreatePipeline(&info, pPipeline);
 }
 

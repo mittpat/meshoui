@@ -95,7 +95,7 @@ int main(int argc, char** argv)
 
     // Passthrough
     VkPipeline passthroughPipeline;
-    moCreateUnwrapPipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &passthroughPipeline);
+    moCreatePipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, "unwrap.glsl", &passthroughPipeline, MO_PIPELINE_FEATURE_NONE);
 
     // Blur
     MoRenderbuffer renderBuffer;
@@ -118,6 +118,7 @@ int main(int argc, char** argv)
         MoCommandBuffer currentCommandBuffer;
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
+        moBeginRenderPass(swapChain, currentCommandBuffer);
         moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
         moBindRenderbuffer(currentCommandBuffer.buffer, renderBuffer, pipelineLayout->pipelineLayout, swapChain->frameIndex);
 
