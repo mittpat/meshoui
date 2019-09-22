@@ -1,5 +1,13 @@
 #version 450 core
 
+layout(std140, binding = 0) uniform Block
+{
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform vec3 cameraPosition;
+    uniform vec3 lightPosition;
+} uniformData;
+
 #ifdef COMPILING_VERTEX
 layout(location=0) out VertexData
 {
@@ -15,21 +23,19 @@ layout(location = 3) in vec3 vertexTangent;
 layout(location = 4) in vec3 vertexBitangent;
 layout(push_constant) uniform uPushConstant
 {
-    mat4 uniformModel;
-    mat4 uniformView;
-    mat4 uniformProjection;
+    mat4 modelMatrix;
 } pc;
 
 void main()
 {
-    outData.vertex = vec3(pc.uniformModel * vec4(vertexPosition, 1.0));
-    outData.normal = normalize(mat3(transpose(inverse(pc.uniformModel))) * vertexNormal);
+    outData.vertex = vec3(pc.modelMatrix * vec4(vertexPosition, 1.0));
+    outData.normal = normalize(mat3(transpose(inverse(pc.modelMatrix))) * vertexNormal);
     outData.texcoord = vertexTexcoord;
-    vec3 T = normalize(mat3(pc.uniformModel) * vertexTangent);
-    vec3 B = normalize(mat3(pc.uniformModel) * vertexBitangent);
-    vec3 N = normalize(mat3(pc.uniformModel) * vertexNormal);
+    vec3 T = normalize(mat3(pc.modelMatrix) * vertexTangent);
+    vec3 B = normalize(mat3(pc.modelMatrix) * vertexBitangent);
+    vec3 N = normalize(mat3(pc.modelMatrix) * vertexNormal);
     outData.TBN = mat3(T, B, N);
-    gl_Position = pc.uniformProjection * pc.uniformView * pc.uniformModel * vec4(vertexPosition, 1.0);
+    gl_Position = uniformData.projectionMatrix * uniformData.viewMatrix * pc.modelMatrix * vec4(vertexPosition, 1.0);
 }
 #endif
 
@@ -42,11 +48,6 @@ layout(location = 0) in VertexData
     vec2 texcoord;
     mat3 TBN;
 } inData;
-layout(std140, binding = 0) uniform Block
-{
-    uniform vec3 viewPosition;
-    uniform vec3 lightPosition;
-} uniformData;
 layout(set = 1, binding = 0) uniform sampler2D uniformTextureAmbient;
 layout(set = 1, binding = 1) uniform sampler2D uniformTextureDiffuse;
 layout(set = 1, binding = 2) uniform sampler2D uniformTextureNormal;
@@ -63,7 +64,7 @@ void main()
 
     // discard textureNormal when ~= (0,0,0)
     vec3 normal = length(textureNormal) > 0.1 ? inData.TBN * normalize(2.0 * vec3(textureNormal.x, 1.0 - textureNormal.y, textureNormal.z) - 1.0) : inData.normal;
-    vec3 viewDir = normalize(uniformData.viewPosition - inData.vertex);
+    vec3 viewDir = normalize(uniformData.cameraPosition - inData.vertex);
     vec3 lightDir = normalize(uniformData.lightPosition - inData.vertex);
 
     const float kPi = 3.14159265;

@@ -18,11 +18,13 @@ typedef struct MoMaterial_T {
     VkSampler normalSampler;
     VkSampler specularSampler;
     VkSampler emissiveSampler;
+    VkSampler occlusionSampler;
     MoImageBuffer ambientImage;
     MoImageBuffer diffuseImage;
     MoImageBuffer normalImage;
     MoImageBuffer specularImage;
     MoImageBuffer emissiveImage;    
+    MoImageBuffer occlusionImage;
     std::uint32_t registrationCount;
     const MoMaterialRegistration* pRegistrations;
 }* MoMaterial;

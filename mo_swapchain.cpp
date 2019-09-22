@@ -454,6 +454,11 @@ void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuf
         err = vkBeginCommandBuffer(pCurrentCommandBuffer->buffer, &info);
         g_Device->pCheckVkResultFn(err);
     }
+
+}
+
+void moBeginRenderPass(MoSwapChain swapChain, MoCommandBuffer currentCommandBuffer)
+{
     {
         VkRenderPassBeginInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -465,13 +470,13 @@ void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuf
         clearValue[1].depthStencil = {1.0f, 0};
         info.pClearValues = clearValue;
         info.clearValueCount = 2;
-        vkCmdBeginRenderPass(pCurrentCommandBuffer->buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(currentCommandBuffer.buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
     }
 
     VkViewport viewport{ 0, 0, float(swapChain->extent.width), float(swapChain->extent.height), 0.f, 1.f };
-    vkCmdSetViewport(pCurrentCommandBuffer->buffer, 0, 1, &viewport);
+    vkCmdSetViewport(currentCommandBuffer.buffer, 0, 1, &viewport);
     VkRect2D scissor{ { 0, 0 },{ swapChain->extent.width, swapChain->extent.height } };
-    vkCmdSetScissor(pCurrentCommandBuffer->buffer, 0, 1, &scissor);
+    vkCmdSetScissor(currentCommandBuffer.buffer, 0, 1, &scissor);
 }
 
 VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaphore)

@@ -44,6 +44,7 @@ typedef struct MoSwapChain_T {
 void moCreateSwapChain(MoSwapChainCreateInfo* pCreateInfo, MoSwapChain* pSwapChain);
 void moRecreateSwapChain(MoSwapChainRecreateInfo* pCreateInfo, MoSwapChain swapChain);
 void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuffer, VkSemaphore *pImageAcquiredSemaphore);
+void moBeginRenderPass(MoSwapChain swapChain, MoCommandBuffer currentCommandBuffer);
 VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaphore);
 
 // free swap chain, command and swap buffers

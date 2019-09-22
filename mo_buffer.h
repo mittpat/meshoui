@@ -34,12 +34,12 @@ typedef struct MoCommandBuffer {
 } MoCommandBuffer;
 
 typedef struct MoPushConstant {
-    linalg::aliases::float4x4 model;
-    linalg::aliases::float4x4 view;
-    linalg::aliases::float4x4 projection;
+    alignas(16) linalg::aliases::float4x4 model;
 } MoPushConstant;
 
 typedef struct MoUniform {
+    alignas(16) linalg::aliases::float4x4 view;
+    alignas(16) linalg::aliases::float4x4 projection;
     alignas(16) linalg::aliases::float3 camera;
     alignas(16) linalg::aliases::float3 light;
 } MoUniform;

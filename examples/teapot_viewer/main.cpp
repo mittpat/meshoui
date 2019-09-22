@@ -133,11 +133,11 @@ int main(int argc, char** argv)
 
     // Phong
     VkPipeline phongPipeline;
-    moCreatePhongPipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &phongPipeline);
+    moCreatePipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, "phong.glsl", &phongPipeline);
 
     // Dome
     VkPipeline domePipeline;
-    moCreateDomePipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &domePipeline);
+    moCreatePipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, "dome.glsl", &domePipeline, MO_PIPELINE_FEATURE_NONE);
 
     MoMesh sphereMesh;
     moCreateDemoSphere(&sphereMesh);
@@ -172,8 +172,11 @@ int main(int argc, char** argv)
         MoCommandBuffer currentCommandBuffer;
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
+        moBeginRenderPass(swapChain, currentCommandBuffer);
         {
             MoUniform uni = {};
+            uni.projection = projection_matrix;
+            uni.view = inverse(camera.model());
             uni.light = light.model.w.xyz();
             uni.camera = camera.position;
             moUploadBuffer(pipelineLayout->uniformBuffer[swapChain->frameIndex], sizeof(MoUniform), &uni);
@@ -181,9 +184,6 @@ int main(int argc, char** argv)
         moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
         {
             MoPushConstant pmv = {};
-            pmv.projection = projection_matrix;
-            pmv.view = inverse(camera.model());
-            pmv.view.w = float4(0,0,0,1); //no translation
             pmv.model = identity;
             moBindMaterial(currentCommandBuffer.buffer, domeMaterial, pipelineLayout->pipelineLayout);
             vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
@@ -193,8 +193,6 @@ int main(int argc, char** argv)
         if (scene)
         {
             MoPushConstant pmv = {};
-            pmv.projection = projection_matrix;
-            pmv.view = inverse(camera.model());
             std::function<void(MoNode, const float4x4 &)> draw = [&](MoNode node, const float4x4 & model)
             {
                 if (node->material && node->mesh)

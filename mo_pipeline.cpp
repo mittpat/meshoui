@@ -23,7 +23,7 @@ void moCreatePipelineLayout(MoPipelineLayout *pPipeline)
         binding[0].binding = 0;
         binding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         binding[0].descriptorCount = 1;
-        binding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        binding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -35,8 +35,8 @@ void moCreatePipelineLayout(MoPipelineLayout *pPipeline)
 
     // material bindings
     {
-        VkDescriptorSetLayoutBinding binding[5];
-        for (uint32_t i = 0; i < 5; ++i)
+        VkDescriptorSetLayoutBinding binding[6];
+        for (uint32_t i = 0; i < 6; ++i)
         {
             binding[i].binding = i;
             binding[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -189,7 +189,7 @@ void moCreatePipeline(const MoPipelineCreateInfo *pCreateInfo, VkPipeline *pPipe
     ms_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
     VkPipelineColorBlendAttachmentState color_attachment[1] = {};
-    color_attachment[0].blendEnable = VK_TRUE;
+    color_attachment[0].blendEnable = pCreateInfo->flags & MO_PIPELINE_FEATURE_COLOR_BLEND ? VK_TRUE : VK_FALSE;
     color_attachment[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     color_attachment[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     color_attachment[0].colorBlendOp = VK_BLEND_OP_ADD;

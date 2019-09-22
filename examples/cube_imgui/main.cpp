@@ -219,7 +219,7 @@ int main(int argc, char** argv)
 
     // Passthrough
     VkPipeline passthroughPipeline;
-    moCreatePassthroughPipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, &passthroughPipeline);
+    moCreatePipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, "passthrough.glsl", &passthroughPipeline, MO_PIPELINE_FEATURE_NONE);
 
     MoMesh cubeMesh;
     moCreateDemoCube(&cubeMesh, float3(0.5,0.5,0.5));
@@ -236,6 +236,7 @@ int main(int argc, char** argv)
         MoCommandBuffer currentCommandBuffer;
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
+        moBeginRenderPass(swapChain, currentCommandBuffer);
         moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
         moDrawMesh(currentCommandBuffer.buffer, cubeMesh);
 

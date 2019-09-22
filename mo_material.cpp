@@ -62,7 +62,7 @@ void generateTexture(MoImageBuffer *pImageBuffer, const MoTextureInfo &textureIn
     }
 
     // create buffer
-    moCreateBuffer(pImageBuffer, {width, height, 1}, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+    moCreateBuffer(pImageBuffer, {width, height, 1}, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
 
     // upload
     MoDeviceBuffer upload = {};
@@ -97,11 +97,18 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
     VkResult err = vkDeviceWaitIdle(g_Device->device);
     g_Device->pCheckVkResultFn(err);
 
+    MoTextureInfo occlusionInfo = {};
+    occlusionInfo.extent = {128,128};
+    occlusionInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    static std::uint8_t black[128*128*4] = {};
+    occlusionInfo.pData = black;
+
     generateTexture(&material->ambientImage,  pCreateInfo->textureAmbient,  pCreateInfo->colorAmbient,  pCreateInfo->commandPool, pCreateInfo->commandBuffer);
     generateTexture(&material->diffuseImage,  pCreateInfo->textureDiffuse,  pCreateInfo->colorDiffuse,  pCreateInfo->commandPool, pCreateInfo->commandBuffer);
     generateTexture(&material->normalImage,   pCreateInfo->textureNormal,   {0.f, 0.f, 0.f, 0.f},       pCreateInfo->commandPool, pCreateInfo->commandBuffer);
     generateTexture(&material->emissiveImage, pCreateInfo->textureEmissive, pCreateInfo->colorEmissive, pCreateInfo->commandPool, pCreateInfo->commandBuffer);
     generateTexture(&material->specularImage, pCreateInfo->textureSpecular, pCreateInfo->colorSpecular, pCreateInfo->commandPool, pCreateInfo->commandBuffer);
+    generateTexture(&material->occlusionImage, occlusionInfo,               {0.f, 0.f, 0.f, 0.f},       pCreateInfo->commandPool, pCreateInfo->commandBuffer);
 
     {
         VkSamplerCreateInfo info = {};
@@ -127,6 +134,9 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
         g_Device->pCheckVkResultFn(err);
         info.minFilter = info.magFilter = pCreateInfo->textureEmissive.filter;
         err = vkCreateSampler(g_Device->device, &info, VK_NULL_HANDLE, &material->emissiveSampler);
+        g_Device->pCheckVkResultFn(err);        
+        info.minFilter = info.magFilter = VK_FILTER_NEAREST;
+        err = vkCreateSampler(g_Device->device, &info, VK_NULL_HANDLE, &material->occlusionSampler);
         g_Device->pCheckVkResultFn(err);
     }
 }
@@ -147,7 +157,7 @@ void moRegisterMaterial(MoPipelineLayout pipeline, MoMaterial material)
     }
 
     {
-        VkDescriptorImageInfo imageDescriptor[5] = {};
+        VkDescriptorImageInfo imageDescriptor[6] = {};
         imageDescriptor[0].sampler = material->ambientSampler;
         imageDescriptor[0].imageView = material->ambientImage->view;
         imageDescriptor[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -163,8 +173,11 @@ void moRegisterMaterial(MoPipelineLayout pipeline, MoMaterial material)
         imageDescriptor[4].sampler = material->emissiveSampler;
         imageDescriptor[4].imageView = material->emissiveImage->view;
         imageDescriptor[4].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        VkWriteDescriptorSet writeDescriptor[5] = {};
-        for (uint32_t i = 0; i < 5; ++i)
+        imageDescriptor[5].sampler = material->occlusionSampler;
+        imageDescriptor[5].imageView = material->occlusionImage->view;
+        imageDescriptor[5].imageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;//VK_IMAGE_LAYOUT_GENERAL;//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        VkWriteDescriptorSet writeDescriptor[6] = {};
+        for (uint32_t i = 0; i < countof(writeDescriptor); ++i)
         {
             writeDescriptor[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptor[i].dstSet = registration.descriptorSet;
@@ -173,7 +186,7 @@ void moRegisterMaterial(MoPipelineLayout pipeline, MoMaterial material)
             writeDescriptor[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             writeDescriptor[i].pImageInfo = &imageDescriptor[i];
         }
-        vkUpdateDescriptorSets(g_Device->device, 5, writeDescriptor, 0, VK_NULL_HANDLE);
+        vkUpdateDescriptorSets(g_Device->device, countof(writeDescriptor), writeDescriptor, 0, VK_NULL_HANDLE);
     }
 
     carray_push_back(&material->pRegistrations, &material->registrationCount, registration);
@@ -187,11 +200,13 @@ void moDestroyMaterial(MoMaterial material)
     moDeleteBuffer(material->normalImage);
     moDeleteBuffer(material->specularImage);
     moDeleteBuffer(material->emissiveImage);
+    moDeleteBuffer(material->occlusionImage);
     vkDestroySampler(g_Device->device, material->ambientSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->diffuseSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->normalSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->specularSampler, VK_NULL_HANDLE);
     vkDestroySampler(g_Device->device, material->emissiveSampler, VK_NULL_HANDLE);
+    vkDestroySampler(g_Device->device, material->occlusionSampler, VK_NULL_HANDLE);
     for (std::uint32_t i = 0; i < material->registrationCount; ++i)
     {
         vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, 1, &material->pRegistrations[i].descriptorSet);
