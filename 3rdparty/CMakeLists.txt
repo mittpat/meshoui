@@ -53,6 +53,7 @@ function(compile_glsl binaries)
     get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
     get_filename_component(FIL_NAME ${FIL} NAME_WE)
     get_filename_component(FIL_DIR ${FIL} DIRECTORY)
+    get_filename_component(FIL_EXT ${FIL} EXT)
 
     if (NOT DEFINED glslang_output_dir)
       set(glslang_output_dir "${FIL_DIR}")

@@ -1,8 +1,15 @@
 #pragma once
 
 #include "mo_buffer.h"
+#include "mo_bvh.h"
+#include "mo_pipeline.h"
 
 #include <linalg.h>
+
+typedef struct MoMeshRegistration {
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSet descriptorSet;
+} MoMeshRegistration;
 
 typedef struct MoMesh_T {
     MoDeviceBuffer verticesBuffer;
@@ -11,8 +18,12 @@ typedef struct MoMesh_T {
     MoDeviceBuffer tangentsBuffer;
     MoDeviceBuffer bitangentsBuffer;
     MoDeviceBuffer indexBuffer;
+    MoDeviceBuffer bvhObjectBuffer;
+    MoDeviceBuffer bvhNodesBuffer;
     uint32_t indexBufferSize;
     uint32_t vertexCount;
+    const MoMeshRegistration* pRegistrations;
+    std::uint32_t registrationCount;
 }* MoMesh;
 
 typedef struct MoMeshCreateInfo {
@@ -24,15 +35,18 @@ typedef struct MoMeshCreateInfo {
     linalg::aliases::float3* pTangents;
     linalg::aliases::float3* pBitangents;
     uint32_t                 vertexCount;
+    MoBVH                    bvh;
 } MoMeshCreateInfo;
 
 // upload a new mesh to the GPU and return a handle
 void moCreateMesh(const MoMeshCreateInfo* pCreateInfo, MoMesh* pMesh);
+void moRegisterMesh(MoPipelineLayout pipeline, MoMesh mesh);
 
 // free a mesh
 void moDestroyMesh(MoMesh mesh);
 
 // draw a mesh
+void moBindMesh(VkCommandBuffer commandBuffer, MoMesh mesh, VkPipelineLayout pipelineLayout);
 void moDrawMesh(VkCommandBuffer commandBuffer, MoMesh mesh);
 
 /*

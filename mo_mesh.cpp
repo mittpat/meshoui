@@ -1,5 +1,7 @@
 #include "mo_mesh.h"
 
+#include "mo_array.h"
+#include "mo_bvh.h"
 #include "mo_device.h"
 #include "mo_swapchain.h"
 
@@ -30,6 +32,67 @@ void moCreateMesh(const MoMeshCreateInfo *pCreateInfo, MoMesh *pMesh)
     moUploadBuffer(mesh->tangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pTangents);
     moUploadBuffer(mesh->bitangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pBitangents);
     moUploadBuffer(mesh->indexBuffer, index_size, pCreateInfo->pIndices);
+
+    if (pCreateInfo->bvh && pCreateInfo->bvh->splitNodeCount)
+    {
+        VkDeviceSize objectsSize = sizeof(MoTriangle) * pCreateInfo->bvh->triangleCount;
+        moCreateBuffer(&mesh->bvhObjectBuffer, objectsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        moUploadBuffer(mesh->bvhObjectBuffer, objectsSize, pCreateInfo->bvh->pTriangles);
+
+        VkDeviceSize nodesSize = sizeof(MoBVHSplitNode) * pCreateInfo->bvh->splitNodeCount;
+        moCreateBuffer(&mesh->bvhNodesBuffer, nodesSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        moUploadBuffer(mesh->bvhNodesBuffer, nodesSize, pCreateInfo->bvh->pSplitNodes);
+    }
+    else
+    {
+        uint32_t data[4] = {};
+        VkDeviceSize size = sizeof(data);
+
+        moCreateBuffer(&mesh->bvhObjectBuffer, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        moUploadBuffer(mesh->bvhObjectBuffer, size, &data);
+
+        moCreateBuffer(&mesh->bvhNodesBuffer, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        moUploadBuffer(mesh->bvhNodesBuffer, size, &data);
+    }
+}
+
+void moRegisterMesh(MoPipelineLayout pipeline, MoMesh mesh)
+{
+    MoMeshRegistration registration = {};
+    registration.pipelineLayout = pipeline->pipelineLayout;
+
+    {
+        VkDescriptorSetAllocateInfo alloc_info = {};
+        alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        alloc_info.descriptorPool = g_Device->descriptorPool;
+        alloc_info.descriptorSetCount = 1;
+        alloc_info.pSetLayouts = &pipeline->descriptorSetLayout[MO_SSBO_DESC_LAYOUT];
+        VkResult err = vkAllocateDescriptorSets(g_Device->device, &alloc_info, &registration.descriptorSet);
+        g_Device->pCheckVkResultFn(err);
+    }
+
+    VkDescriptorBufferInfo desc_buffer[2] = {};
+    desc_buffer[0].buffer = mesh->bvhObjectBuffer->buffer;
+    desc_buffer[0].offset = 0;
+    desc_buffer[0].range = mesh->bvhObjectBuffer->size;
+    desc_buffer[1].buffer = mesh->bvhNodesBuffer->buffer;
+    desc_buffer[1].offset = 0;
+    desc_buffer[1].range = mesh->bvhNodesBuffer->size;
+
+    VkWriteDescriptorSet write_desc[2] = {};
+    for (uint32_t i = 0; i < 2; ++i)
+    {
+        write_desc[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write_desc[i].dstSet = registration.descriptorSet;
+        write_desc[i].dstBinding = i;
+        write_desc[i].dstArrayElement = 0;
+        write_desc[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        write_desc[i].descriptorCount = 1;
+        write_desc[i].pBufferInfo = &desc_buffer[i];
+    }
+    vkUpdateDescriptorSets(g_Device->device, 2, write_desc, 0, nullptr);
+
+    carray_push_back(&mesh->pRegistrations, &mesh->registrationCount, registration);
 }
 
 void moDestroyMesh(MoMesh mesh)
@@ -41,7 +104,26 @@ void moDestroyMesh(MoMesh mesh)
     moDeleteBuffer(mesh->tangentsBuffer);
     moDeleteBuffer(mesh->bitangentsBuffer);
     moDeleteBuffer(mesh->indexBuffer);
+    moDeleteBuffer(mesh->bvhObjectBuffer);
+    moDeleteBuffer(mesh->bvhNodesBuffer);
+    for (std::uint32_t i = 0; i < mesh->registrationCount; ++i)
+    {
+        vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, 1, &mesh->pRegistrations[i].descriptorSet);
+    }
+    carray_free(mesh->pRegistrations, &mesh->registrationCount);
     delete mesh;
+}
+
+void moBindMesh(VkCommandBuffer commandBuffer, MoMesh mesh, VkPipelineLayout pipelineLayout)
+{
+    for (std::uint32_t i = 0; i < mesh->registrationCount; ++i)
+    {
+        if (mesh->pRegistrations[i].pipelineLayout == pipelineLayout)
+        {
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, MO_SSBO_DESC_LAYOUT, 1, &mesh->pRegistrations[i].descriptorSet, 0, VK_NULL_HANDLE);
+            break;
+        }
+    }
 }
 
 void moDrawMesh(VkCommandBuffer commandBuffer, MoMesh mesh)

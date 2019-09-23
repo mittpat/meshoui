@@ -1,5 +1,6 @@
 #include "mo_node.h"
 #include "mo_array.h"
+#include "mo_bvh.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -102,6 +103,7 @@ void moCreateScene(MoCommandBuffer commandBuffer, const char *filename, MoScene*
             }
             info.commandBuffer = commandBuffer.buffer;
             info.commandPool = commandBuffer.pool;
+            info.colorAmbient = {0.2,0.2,0.2,1};
             moCreateMaterial(&info, const_cast<MoMaterial*>(&scene->pMaterials[materialIdx]));
         }
 
@@ -158,7 +160,10 @@ void moCreateScene(MoCommandBuffer commandBuffer, const char *filename, MoScene*
             info.pNormals = normals.data();
             info.pTangents = tangents.data();
             info.pBitangents = bitangents.data();
+
+            moCreateBVH(mesh, &info.bvh);
             moCreateMesh(&info, const_cast<MoMesh*>(&scene->pMeshes[meshIdx]));
+            moDestroyBVH(info.bvh);
         }
 
         moCreateNode(aScene, scene, aScene->mRootNode, const_cast<MoNode*>(&scene->root));

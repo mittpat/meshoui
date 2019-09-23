@@ -8,7 +8,8 @@
 #define MO_PROGRAM_DESC_LAYOUT 0
 #define MO_MATERIAL_DESC_LAYOUT 1
 #define MO_RENDER_DESC_LAYOUT 2
-#define MO_COUNT_DESC_LAYOUT MO_RENDER_DESC_LAYOUT+1
+#define MO_SSBO_DESC_LAYOUT 3
+#define MO_COUNT_DESC_LAYOUT MO_SSBO_DESC_LAYOUT+1
 
 typedef struct MoPipelineLayout_T {
     VkPipelineLayout pipelineLayout;
