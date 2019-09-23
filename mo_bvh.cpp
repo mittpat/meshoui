@@ -77,15 +77,15 @@ void moCreateBVH(const aiMesh * ai_mesh, MoBVH *pBVH)
             triangle.v0 = float3((float*)&ai_mesh->mVertices[face->mIndices[0]]);
             triangle.v1 = float3((float*)&ai_mesh->mVertices[face->mIndices[1]]);
             triangle.v2 = float3((float*)&ai_mesh->mVertices[face->mIndices[2]]);
-            if (ai_mesh->HasTextureCoords(0))
-            {
-                triangle.uv0 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[0]]);
-                triangle.uv1 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[1]]);
-                triangle.uv2 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[2]]);
-            }
-            triangle.n0 = float3((float*)&ai_mesh->mNormals[face->mIndices[0]]);
-            triangle.n1 = float3((float*)&ai_mesh->mNormals[face->mIndices[1]]);
-            triangle.n2 = float3((float*)&ai_mesh->mNormals[face->mIndices[2]]);
+            //if (ai_mesh->HasTextureCoords(0))
+            //{
+            //    triangle.uv0 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[0]]);
+            //    triangle.uv1 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[1]]);
+            //    triangle.uv2 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[2]]);
+            //}
+            //triangle.n0 = float3((float*)&ai_mesh->mNormals[face->mIndices[0]]);
+            //triangle.n1 = float3((float*)&ai_mesh->mNormals[face->mIndices[1]]);
+            //triangle.n2 = float3((float*)&ai_mesh->mNormals[face->mIndices[2]]);
             break;
         }
         default:

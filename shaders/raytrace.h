@@ -35,8 +35,6 @@ bool moIntersect(in MoBBox self, in MoRay ray, out float t_near, out float t_far
 struct MoTriangle
 {
     vec3 v0, v1, v2;
-    vec2 uv0, uv1, uv2;
-    vec3 n0, n1, n2;
 };
 
 bool moRayTriangleIntersect(in MoTriangle self, in MoRay ray, out float t, out float u, out float v)

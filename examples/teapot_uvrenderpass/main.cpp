@@ -166,7 +166,7 @@ int main(int argc, char** argv)
     }
 
     // Create UV Render Pass and Framebuffer
-    VkExtent2D extentUV = {2048,2048};
+    VkExtent2D extentUV = {MO_OCCLUSION_RESOLUTION,MO_OCCLUSION_RESOLUTION};
     VkRenderPass renderPassUV;
     VkFramebuffer framebufferUV;
 

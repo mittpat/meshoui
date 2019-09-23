@@ -7,6 +7,8 @@
 
 #include <linalg.h>
 
+#define MO_OCCLUSION_RESOLUTION 2048
+
 typedef struct MoMaterialRegistration {
     VkPipelineLayout pipelineLayout;
     VkDescriptorSet descriptorSet;

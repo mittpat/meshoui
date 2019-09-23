@@ -98,9 +98,10 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
     g_Device->pCheckVkResultFn(err);
 
     MoTextureInfo occlusionInfo = {};
-    occlusionInfo.extent = {2048,2048};
+    occlusionInfo.extent = {MO_OCCLUSION_RESOLUTION,MO_OCCLUSION_RESOLUTION};
     occlusionInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-    static std::uint8_t black[2048*2048*4] = {};
+    occlusionInfo.filter = VK_FILTER_NEAREST;
+    static std::uint8_t black[MO_OCCLUSION_RESOLUTION*MO_OCCLUSION_RESOLUTION*4] = {};
     occlusionInfo.pData = black;
 
     generateTexture(&material->ambientImage,  pCreateInfo->textureAmbient,  pCreateInfo->colorAmbient,  pCreateInfo->commandPool, pCreateInfo->commandBuffer);
@@ -135,7 +136,7 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
         info.minFilter = info.magFilter = pCreateInfo->textureEmissive.filter;
         err = vkCreateSampler(g_Device->device, &info, VK_NULL_HANDLE, &material->emissiveSampler);
         g_Device->pCheckVkResultFn(err);        
-        info.minFilter = info.magFilter = VK_FILTER_NEAREST;
+        info.minFilter = info.magFilter = occlusionInfo.filter;
         err = vkCreateSampler(g_Device->device, &info, VK_NULL_HANDLE, &material->occlusionSampler);
         g_Device->pCheckVkResultFn(err);
     }

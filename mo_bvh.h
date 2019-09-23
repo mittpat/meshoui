@@ -36,12 +36,6 @@ struct MoTriangle
     alignas(16) linalg::aliases::float3 v0;
     alignas(16) linalg::aliases::float3 v1;
     alignas(16) linalg::aliases::float3 v2;
-    alignas( 8) linalg::aliases::float2 uv0;
-    alignas( 8) linalg::aliases::float2 uv1;
-    alignas( 8) linalg::aliases::float2 uv2;
-    alignas(16) linalg::aliases::float3 n0;
-    alignas(16) linalg::aliases::float3 n1;
-    alignas(16) linalg::aliases::float3 n2;
 };
 
 struct MoBVHSplitNode

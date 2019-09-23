@@ -57,17 +57,20 @@ layout(set = 1, binding = 5) uniform sampler2D uniformTextureOcclusion;
 
 vec4 sampleFramebufferAO()
 {
-    vec2 texcoordAO = vec2(inData.texcoord.s,1 - inData.texcoord.t);
+    vec2 texcoordAO = vec2(inData.texcoord.s, 1 - inData.texcoord.t);
     vec4 textureOcclusion = texture(uniformTextureOcclusion, texcoordAO);
     vec4 red   = textureGather( uniformTextureOcclusion, texcoordAO, 0);
-    vec4 green = textureGather( uniformTextureOcclusion, texcoordAO, 1);
-    vec4 blue  = textureGather( uniformTextureOcclusion, texcoordAO, 2);
     vec4 alpha = textureGather( uniformTextureOcclusion, texcoordAO, 3);
-    textureOcclusion = mix(textureOcclusion, vec4(red[0], green[0], blue[0], 1), alpha[0]);
-    textureOcclusion = mix(textureOcclusion, vec4(red[1], green[1], blue[1], 1), alpha[1]);
-    textureOcclusion = mix(textureOcclusion, vec4(red[2], green[2], blue[2], 1), alpha[2]);
-    textureOcclusion = mix(textureOcclusion, vec4(red[3], green[3], blue[3], 1), alpha[3]);
-    return mix(vec4(1), textureOcclusion, textureOcclusion.a);
+    vec2 sum = vec2(0);
+    if (alpha[0] > 0.99)
+        sum += vec2(red[0], 1);
+    if (alpha[1] > 0.99)
+        sum += vec2(red[1], 1);
+    if (alpha[2] > 0.99)
+        sum += vec2(red[2], 1);
+    if (alpha[3] > 0.99)
+        sum += vec2(red[3], 1);
+    return sum.xxxy / sum.y;
 }
 
 void main()
