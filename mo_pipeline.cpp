@@ -69,6 +69,29 @@ void moCreatePipelineLayout(MoPipelineLayout *pPipeline)
     }
 
     {
+        VkDescriptorSetLayoutBinding binding[2];
+
+        // triangle bvh objects
+        binding[0].binding = 0;
+        binding[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        binding[0].descriptorCount = 1;
+        binding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        // triangle bvh nodes
+        binding[1].binding = 1;
+        binding[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        binding[1].descriptorCount = 1;
+        binding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        VkDescriptorSetLayoutCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        info.bindingCount = (uint32_t)countof(binding);
+        info.pBindings = binding;
+        err = vkCreateDescriptorSetLayout(g_Device->device, &info, VK_NULL_HANDLE, &pipeline->descriptorSetLayout[MO_SSBO_DESC_LAYOUT]);
+        g_Device->pCheckVkResultFn(err);
+    }
+
+    {
         VkDescriptorSetLayout descriptorSetLayout[MO_FRAME_COUNT] = {};
         for (size_t i = 0; i < MO_FRAME_COUNT; ++i)
             descriptorSetLayout[i] = pipeline->descriptorSetLayout[MO_PROGRAM_DESC_LAYOUT];

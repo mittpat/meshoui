@@ -92,8 +92,7 @@ void main()
     float diffuseFactor = dot(normal, lightDir);
     if (diffuseFactor > 0.0)
     {
-        fragment += vec4(diffuseFactor * textureDiffuse.rgb + spec * textureSpecular.rgb, 0.0);        
-        fragment.rgb *= sampleFramebufferAO().rgb;
+        fragment += vec4(min(vec3(diffuseFactor), sampleFramebufferAO().rgb) * (textureDiffuse.rgb + spec * textureSpecular.rgb), 0.0);
     }
 }
 #endif

@@ -98,9 +98,9 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
     g_Device->pCheckVkResultFn(err);
 
     MoTextureInfo occlusionInfo = {};
-    occlusionInfo.extent = {128,128};
+    occlusionInfo.extent = {2048,2048};
     occlusionInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-    static std::uint8_t black[128*128*4] = {};
+    static std::uint8_t black[2048*2048*4] = {};
     occlusionInfo.pData = black;
 
     generateTexture(&material->ambientImage,  pCreateInfo->textureAmbient,  pCreateInfo->colorAmbient,  pCreateInfo->commandPool, pCreateInfo->commandBuffer);

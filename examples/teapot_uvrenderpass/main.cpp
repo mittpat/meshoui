@@ -160,9 +160,13 @@ int main(int argc, char** argv)
     {
         moRegisterMaterial(pipelineLayout, scene->pMaterials[i]);
     }
+    for (std::uint32_t i = 0; i < scene->meshCount; ++i)
+    {
+        moRegisterMesh(pipelineLayout, scene->pMeshes[i]);
+    }
 
     // Create UV Render Pass and Framebuffer
-    VkExtent2D extentUV = {128,128};
+    VkExtent2D extentUV = {2048,2048};
     VkRenderPass renderPassUV;
     VkFramebuffer framebufferUV;
 
@@ -209,8 +213,10 @@ int main(int argc, char** argv)
         moVkCheckResult(err);
     }
 
-    VkPipeline passthroughPipeline;
-    moCreatePipeline(renderPassUV, pipelineLayout->pipelineLayout, "occlusion.glsl", &passthroughPipeline, MO_PIPELINE_FEATURE_NONE);
+    VkPipeline occlusionPipeline;
+    moCreatePipeline(renderPassUV, pipelineLayout->pipelineLayout, "occlusion.glsl", &occlusionPipeline, MO_PIPELINE_FEATURE_NONE);
+
+    bool lightingDirty = true;
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -231,41 +237,51 @@ int main(int argc, char** argv)
             uni.camera = camera.position;
             moUploadBuffer(pipelineLayout->uniformBuffer[swapChain->frameIndex], sizeof(MoUniform), &uni);
         }
-        // UV Render Pass begin
+
+        if (lightingDirty)
         {
-            VkRenderPassBeginInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            info.renderPass = renderPassUV;
-            info.framebuffer = framebufferUV;
-            info.renderArea.extent = extentUV;
-            VkClearValue clearValue[1] = {};
-            info.pClearValues = clearValue;
-            info.clearValueCount = 1;
-            vkCmdBeginRenderPass(currentCommandBuffer.buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
-            VkViewport viewport{ 0, 0, float(extentUV.width), float(extentUV.height), 0.f, 1.f };
-            vkCmdSetViewport(currentCommandBuffer.buffer, 0, 1, &viewport);
-            VkRect2D scissor{ { 0, 0 },{ extentUV.width, extentUV.height } };
-            vkCmdSetScissor(currentCommandBuffer.buffer, 0, 1, &scissor);
-        }
-        moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
-        if (scene)
-        {
-            std::function<void(MoNode)> draw = [&](MoNode node)
+            // UV Render Pass begin
             {
-                if (node->material && node->mesh)
+                VkRenderPassBeginInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+                info.renderPass = renderPassUV;
+                info.framebuffer = framebufferUV;
+                info.renderArea.extent = extentUV;
+                VkClearValue clearValue[1] = {};
+                info.pClearValues = clearValue;
+                info.clearValueCount = 1;
+                vkCmdBeginRenderPass(currentCommandBuffer.buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+                VkViewport viewport{ 0, 0, float(extentUV.width), float(extentUV.height), 0.f, 1.f };
+                vkCmdSetViewport(currentCommandBuffer.buffer, 0, 1, &viewport);
+                VkRect2D scissor{ { 0, 0 },{ extentUV.width, extentUV.height } };
+                vkCmdSetScissor(currentCommandBuffer.buffer, 0, 1, &scissor);
+            }
+            moBindPipeline(currentCommandBuffer.buffer, occlusionPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+            if (scene)
+            {
+                MoPushConstant pmv = {};
+                std::function<void(MoNode, const float4x4 &)> draw = [&](MoNode node, const float4x4 & model)
                 {
-                    moBindMaterial(currentCommandBuffer.buffer, node->material, pipelineLayout->pipelineLayout);
-                    moDrawMesh(currentCommandBuffer.buffer, node->mesh);
-                }
-                for (std::uint32_t i = 0; i < node->nodeCount; ++i)
-                {
-                    draw(node->pNodes[i]);
-                }
-            };
-            draw(scene->root);
+                    if (node->material && node->mesh)
+                    {
+                        pmv.model = model;
+                        moBindMaterial(currentCommandBuffer.buffer, node->material, pipelineLayout->pipelineLayout);
+                        vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+                        moBindMesh(currentCommandBuffer.buffer, node->mesh, pipelineLayout->pipelineLayout);
+                        moDrawMesh(currentCommandBuffer.buffer, node->mesh);
+                    }
+                    for (std::uint32_t i = 0; i < node->nodeCount; ++i)
+                    {
+                        draw(node->pNodes[i], mul(model, node->pNodes[i]->model));
+                    }
+                };
+                draw(scene->root, scene->root->model);
+            }
+            vkCmdEndRenderPass(currentCommandBuffer.buffer);
+            // UV Render Pass end
+
+            lightingDirty = false;
         }
-        vkCmdEndRenderPass(currentCommandBuffer.buffer);
-        // UV Render Pass end
 
         moBeginRenderPass(swapChain, currentCommandBuffer);
         moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
@@ -335,8 +351,8 @@ int main(int argc, char** argv)
     framebufferUV = VK_NULL_HANDLE;
     vkDestroyRenderPass(device->device, renderPassUV, VK_NULL_HANDLE);
     renderPassUV = VK_NULL_HANDLE;
-    vkDestroyPipeline(device->device, passthroughPipeline, VK_NULL_HANDLE);
-    passthroughPipeline = VK_NULL_HANDLE;
+    vkDestroyPipeline(device->device, occlusionPipeline, VK_NULL_HANDLE);
+    occlusionPipeline = VK_NULL_HANDLE;
     moDestroyPipelineLayout(pipelineLayout);
 
     // Cleanup
