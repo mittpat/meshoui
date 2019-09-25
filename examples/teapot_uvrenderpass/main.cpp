@@ -179,7 +179,7 @@ int main(int argc, char** argv)
         attachment[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachment[0].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        attachment[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentReference color_attachment = {};
         color_attachment.attachment = 0;
@@ -215,6 +215,59 @@ int main(int argc, char** argv)
 
     VkPipeline occlusionPipeline;
     moCreatePipeline(renderPassUV, pipelineLayout->pipelineLayout, "occlusion.glsl", &occlusionPipeline, MO_PIPELINE_FEATURE_NONE);
+
+    VkRenderPass renderPassRepair;
+    VkFramebuffer framebufferRepair;
+
+    {
+        VkAttachmentDescription attachment[1] = {};
+        attachment[0].format = VK_FORMAT_R8G8B8A8_UNORM;
+        attachment[0].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachment[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        attachment[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachment[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attachment[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentReference color_attachment = {};
+        color_attachment.attachment = 0;
+        color_attachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpass = {};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = 1;
+        subpass.pColorAttachments = &color_attachment;
+
+        VkRenderPassCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        info.attachmentCount = 1;
+        info.pAttachments = attachment;
+        info.subpassCount = 1;
+        info.pSubpasses = &subpass;
+        VkResult err = vkCreateRenderPass(device->device, &info, VK_NULL_HANDLE, &renderPassRepair);
+        moVkCheckResult(err);
+    }
+    {
+        VkImageView attachment[1] = {scene->pMaterials[0]->occlusionImage->view};
+        VkFramebufferCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        info.renderPass = renderPassRepair;
+        info.attachmentCount = 1;
+        info.pAttachments = attachment;
+        info.width = extentUV.width;
+        info.height = extentUV.height;
+        info.layers = 1;
+        VkResult err = vkCreateFramebuffer(device->device, &info, VK_NULL_HANDLE, &framebufferRepair);
+        moVkCheckResult(err);
+    }
+
+    VkPipeline occlusionRepairPipeline;
+    moCreatePipeline(renderPassRepair, pipelineLayout->pipelineLayout, "occlusion_repair.glsl", &occlusionRepairPipeline, MO_PIPELINE_FEATURE_NONE);
+
+    MoMesh cubeMesh;
+    moCreateDemoCube(&cubeMesh, float3(0.5,0.5,0.5));
+    moRegisterMesh(pipelineLayout, cubeMesh);
 
     bool lightingDirty = true;
 
@@ -280,6 +333,46 @@ int main(int argc, char** argv)
             vkCmdEndRenderPass(currentCommandBuffer.buffer);
             // UV Render Pass end
 
+            // Repair Render Pass begin
+            for (int i = 0; i < 1; ++i)
+            {
+                {
+                    VkRenderPassBeginInfo info = {};
+                    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+                    info.renderPass = renderPassRepair;
+                    info.framebuffer = framebufferRepair;
+                    info.renderArea.extent = extentUV;
+                    vkCmdBeginRenderPass(currentCommandBuffer.buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+                    VkViewport viewport{ 0, 0, float(extentUV.width), float(extentUV.height), 0.f, 1.f };
+                    vkCmdSetViewport(currentCommandBuffer.buffer, 0, 1, &viewport);
+                    VkRect2D scissor{ { 0, 0 },{ extentUV.width, extentUV.height } };
+                    vkCmdSetScissor(currentCommandBuffer.buffer, 0, 1, &scissor);
+                }
+                moBindPipeline(currentCommandBuffer.buffer, occlusionRepairPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+                if (scene)
+                {
+                    MoPushConstant pmv = {};
+                    std::function<void(MoNode, const float4x4 &)> draw = [&](MoNode node, const float4x4 & model)
+                    {
+                        if (node->material && node->mesh)
+                        {
+                            pmv.model = model;
+                            moBindMaterial(currentCommandBuffer.buffer, node->material, pipelineLayout->pipelineLayout);
+                            vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
+                            moBindMesh(currentCommandBuffer.buffer, cubeMesh, pipelineLayout->pipelineLayout);
+                            moDrawMesh(currentCommandBuffer.buffer, cubeMesh);
+                        }
+                        for (std::uint32_t i = 0; i < node->nodeCount; ++i)
+                        {
+                            draw(node->pNodes[i], mul(model, node->pNodes[i]->model));
+                        }
+                    };
+                    draw(scene->root, scene->root->model);
+                }
+                vkCmdEndRenderPass(currentCommandBuffer.buffer);
+            }
+            // Repair Render Pass end
+
             lightingDirty = false;
         }
 
@@ -343,14 +436,21 @@ int main(int argc, char** argv)
     moDestroyScene(scene);
     moDestroyMaterial(domeMaterial);
     moDestroyMesh(sphereMesh);
+    moDestroyMesh(cubeMesh);
     vkDestroyPipeline(device->device, domePipeline, VK_NULL_HANDLE);
     domePipeline = VK_NULL_HANDLE;
     vkDestroyPipeline(device->device, phongPipeline, VK_NULL_HANDLE);
     phongPipeline = VK_NULL_HANDLE;
+    vkDestroyFramebuffer(device->device, framebufferRepair, VK_NULL_HANDLE);
+    framebufferRepair = VK_NULL_HANDLE;
+    vkDestroyRenderPass(device->device, renderPassRepair, VK_NULL_HANDLE);
+    renderPassRepair = VK_NULL_HANDLE;
     vkDestroyFramebuffer(device->device, framebufferUV, VK_NULL_HANDLE);
     framebufferUV = VK_NULL_HANDLE;
     vkDestroyRenderPass(device->device, renderPassUV, VK_NULL_HANDLE);
     renderPassUV = VK_NULL_HANDLE;
+    vkDestroyPipeline(device->device, occlusionRepairPipeline, VK_NULL_HANDLE);
+    occlusionRepairPipeline = VK_NULL_HANDLE;
     vkDestroyPipeline(device->device, occlusionPipeline, VK_NULL_HANDLE);
     occlusionPipeline = VK_NULL_HANDLE;
     moDestroyPipelineLayout(pipelineLayout);

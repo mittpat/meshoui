@@ -28,7 +28,7 @@ void main()
     outData.normal = vertexNormal;
     outData.lightDir = normalize(inverse(mat3(pc.modelMatrix)) * uniformData.lightPosition);
 
-    gl_Position = vec4(vertexTexcoord * vec2(2,-2) + vec2(-1,1), 0, 1);
+    gl_Position = vec4(vertexTexcoord * vec2(2,2) + vec2(-1,-1), 0, 1);
 }
 #endif
 

@@ -5,7 +5,7 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(3rdparty)
 
-set(shaders shaders/dome.glsl shaders/phong.glsl shaders/phong_blur.glsl shaders/occlusion.glsl shaders/passthrough.glsl shaders/unwrap.glsl)
+set(shaders shaders/dome.glsl shaders/phong.glsl shaders/phong_blur.glsl shaders/occlusion.glsl shaders/passthrough.glsl shaders/unwrap.glsl shaders/occlusion_repair.glsl)
 set_source_files_properties(${shaders} PROPERTIES HEADER_FILE_ONLY TRUE)
 set(resources resources/teapot.dae)
 set_source_files_properties(${resources} PROPERTIES HEADER_FILE_ONLY TRUE)

@@ -55,24 +55,6 @@ layout(set = 1, binding = 3) uniform sampler2D uniformTextureSpecular;
 layout(set = 1, binding = 4) uniform sampler2D uniformTextureEmissive;
 layout(set = 1, binding = 5) uniform sampler2D uniformTextureOcclusion;
 
-vec4 sampleFramebufferAO()
-{
-    vec2 texcoordAO = vec2(inData.texcoord.s, 1 - inData.texcoord.t);
-    vec4 textureOcclusion = texture(uniformTextureOcclusion, texcoordAO);
-    vec4 red   = textureGather( uniformTextureOcclusion, texcoordAO, 0);
-    vec4 alpha = textureGather( uniformTextureOcclusion, texcoordAO, 3);
-    vec2 sum = vec2(0);
-    if (alpha[0] > 0.99)
-        sum += vec2(red[0], 1);
-    if (alpha[1] > 0.99)
-        sum += vec2(red[1], 1);
-    if (alpha[2] > 0.99)
-        sum += vec2(red[2], 1);
-    if (alpha[3] > 0.99)
-        sum += vec2(red[3], 1);
-    return sum.xxxy / sum.y;
-}
-
 void main()
 {
     vec4 textureAmbient = texture(uniformTextureAmbient, inData.texcoord);
@@ -95,7 +77,8 @@ void main()
     float diffuseFactor = dot(normal, lightDir);
     if (diffuseFactor > 0.0)
     {
-        fragment += vec4(min(vec3(diffuseFactor), sampleFramebufferAO().rgb) * (textureDiffuse.rgb + spec * textureSpecular.rgb), 0.0);
+        vec4 textureOcclusion = texture(uniformTextureOcclusion, inData.texcoord);
+        fragment += vec4(min(vec3(diffuseFactor), textureOcclusion.rgb/1.5+(1-1/1.5)) * (textureDiffuse.rgb + spec * textureSpecular.rgb * textureOcclusion.rgb), 0.0);
     }
 }
 #endif

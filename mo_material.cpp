@@ -100,7 +100,7 @@ void moCreateMaterial(const MoMaterialCreateInfo *pCreateInfo, MoMaterial *pMate
     MoTextureInfo occlusionInfo = {};
     occlusionInfo.extent = {MO_OCCLUSION_RESOLUTION,MO_OCCLUSION_RESOLUTION};
     occlusionInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-    occlusionInfo.filter = VK_FILTER_NEAREST;
+    occlusionInfo.filter = VK_FILTER_LINEAR;
     static std::uint8_t black[MO_OCCLUSION_RESOLUTION*MO_OCCLUSION_RESOLUTION*4] = {};
     occlusionInfo.pData = black;
 
@@ -176,7 +176,7 @@ void moRegisterMaterial(MoPipelineLayout pipeline, MoMaterial material)
         imageDescriptor[4].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageDescriptor[5].sampler = material->occlusionSampler;
         imageDescriptor[5].imageView = material->occlusionImage->view;
-        imageDescriptor[5].imageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;//VK_IMAGE_LAYOUT_GENERAL;//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        imageDescriptor[5].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         VkWriteDescriptorSet writeDescriptor[6] = {};
         for (uint32_t i = 0; i < countof(writeDescriptor); ++i)
         {

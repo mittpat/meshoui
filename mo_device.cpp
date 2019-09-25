@@ -120,6 +120,7 @@ void moCreateDevice(MoDeviceCreateInfo *pCreateInfo, MoDevice *pDevice)
         queue_info[0].pQueuePriorities = queue_priority;
         VkPhysicalDeviceFeatures deviceFeatures = {};
         deviceFeatures.textureCompressionBC = VK_TRUE;
+        deviceFeatures.shaderImageGatherExtended = VK_TRUE;
         VkDeviceCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         create_info.queueCreateInfoCount = countof(queue_info);
