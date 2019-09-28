@@ -78,7 +78,7 @@ void main()
     if (diffuseFactor > 0.0)
     {
         vec4 textureOcclusion = texture(uniformTextureOcclusion, inData.texcoord);
-        fragment += vec4(min(vec3(diffuseFactor), textureOcclusion.rgb/1.5+(1-1/1.5)) * (textureDiffuse.rgb + spec * textureSpecular.rgb * textureOcclusion.rgb), 0.0);
+        fragment += vec4(vec3(diffuseFactor) * (textureOcclusion.rgb/1.5+(1-1/1.5)) * (textureDiffuse.rgb + spec * textureSpecular.rgb * textureOcclusion.rgb), 0.0);
     }
 }
 #endif
