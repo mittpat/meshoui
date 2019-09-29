@@ -212,6 +212,8 @@ int main(int argc, char** argv)
         info.textureNormal.extent = {uint32_t(x),uint32_t(y)};
         info.textureSpecular.pData = stbi_load((std::filesystem::path("resources") / document["specular"].GetString()).c_str(), &x, &y, &n, STBI_rgb_alpha);
         info.textureSpecular.extent = {uint32_t(x),uint32_t(y)};
+        info.textureEmissive.pData = stbi_load((std::filesystem::path("resources") / document["emissive"].GetString()).c_str(), &x, &y, &n, STBI_rgb_alpha);
+        info.textureEmissive.extent = {uint32_t(x),uint32_t(y)};
         moCreateMaterial(&info, &marbleMaterial);
         moRegisterMaterial(pipelineLayout, marbleMaterial);
     }

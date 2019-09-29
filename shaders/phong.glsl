@@ -61,6 +61,7 @@ void main()
     vec4 textureDiffuse = texture(uniformTextureDiffuse, inData.texcoord);
     vec4 textureSpecular = texture(uniformTextureSpecular, inData.texcoord);
     vec4 textureNormal = texture(uniformTextureNormal, inData.texcoord);
+    vec4 textureEmissive = texture(uniformTextureEmissive, inData.texcoord);
     vec4 textureOcclusion = texture(uniformTextureOcclusion, inData.texcoord);
 
     // discard textureNormal when ~= (0,0,0)
@@ -81,5 +82,6 @@ void main()
     {
         fragment += vec4(vec3(diffuseFactor) * (occlusion/1.5+vec3(1-1/1.5)) * (textureDiffuse.rgb + spec * textureSpecular.rgb * occlusion), 0.0);
     }
+    fragment += textureEmissive;
 }
 #endif

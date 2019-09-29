@@ -1,5 +1,6 @@
 {
     "diffuse" : "WhiteMarble_COLOR.png",
     "normal" : "WhiteMarble_NRM.png",
-    "specular" : "WhiteMarble_SPEC.png"
+    "specular" : "WhiteMarble_SPEC.png",
+    "emissive" : "WhiteMarble_EMIS.png"
 }
