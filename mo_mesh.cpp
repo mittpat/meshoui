@@ -54,6 +54,8 @@ void moCreateMesh(const MoMeshCreateInfo *pCreateInfo, MoMesh *pMesh)
         moCreateBuffer(&mesh->bvhNodesBuffer, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
         moUploadBuffer(mesh->bvhNodesBuffer, size, &data);
     }
+
+    mesh->bvh = pCreateInfo->bvh;
 }
 
 void moRegisterMesh(MoPipelineLayout pipeline, MoMesh mesh)
@@ -111,6 +113,10 @@ void moDestroyMesh(MoMesh mesh)
         vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, 1, &mesh->pRegistrations[i].descriptorSet);
     }
     carray_free(mesh->pRegistrations, &mesh->registrationCount);
+    if (mesh->bvh)
+    {
+        moDestroyBVH(mesh->bvh);
+    }
     delete mesh;
 }
 

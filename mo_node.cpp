@@ -163,7 +163,6 @@ void moCreateScene(MoCommandBuffer commandBuffer, const char *filename, MoScene*
 
             moCreateBVH(mesh, &info.bvh);
             moCreateMesh(&info, const_cast<MoMesh*>(&scene->pMeshes[meshIdx]));
-            moDestroyBVH(info.bvh);
         }
 
         moCreateNode(aScene, scene, aScene->mRootNode, const_cast<MoNode*>(&scene->root));

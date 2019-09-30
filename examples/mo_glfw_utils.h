@@ -133,9 +133,8 @@ void moPollMouse(GLFWwindow *window)
 }
 
 template<typename T>
-void moInputTransform(MoInputs* inputs, T* movable)
+void moInputTransform(MoInputs* inputs, T* movable, float speed = 0.5f)
 {
-    const float speed = 0.5f;
     linalg::aliases::float3 forward = linalg::mul(movable->model(), {0.f,0.f,-1.f,0.f}).xyz();
     linalg::aliases::float3 up = linalg::mul(movable->model(), {0.f,1.f,0.f,0.f}).xyz();
     linalg::aliases::float3 right = linalg::mul(movable->model(), {1.f,0.f,0.f,0.f}).xyz();

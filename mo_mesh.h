@@ -24,6 +24,7 @@ typedef struct MoMesh_T {
     uint32_t vertexCount;
     const MoMeshRegistration* pRegistrations;
     std::uint32_t registrationCount;
+    MoBVH         bvh;
 }* MoMesh;
 
 typedef struct MoMeshCreateInfo {

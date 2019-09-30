@@ -40,6 +40,30 @@ std::uint32_t MoBBox::longestSide() const
     return dimension;
 }
 
+// adapted from Tavian Barnes' "Fast, Branchless Ray/Bounding Box Intersections"
+bool MoBBox::intersect(const MoRay& ray, float &t_near, float &t_far) const
+{
+    float tx1 = (min.x - ray.origin.x) * ray.oneOverDirection.x;
+    float tx2 = (max.x - ray.origin.x) * ray.oneOverDirection.x;
+
+    t_near = std::min(tx1, tx2);
+    t_far = std::max(tx1, tx2);
+
+    float ty1 = (min.y - ray.origin.y) * ray.oneOverDirection.y;
+    float ty2 = (max.y - ray.origin.y) * ray.oneOverDirection.y;
+
+    t_near = std::max(t_near, std::min(ty1, ty2));
+    t_far = std::min(t_far, std::max(ty1, ty2));
+
+    float tz1 = (min.z - ray.origin.z) * ray.oneOverDirection.z;
+    float tz2 = (max.z - ray.origin.z) * ray.oneOverDirection.z;
+
+    t_near = std::max(t_near, std::min(tz1, tz2));
+    t_far = std::min(t_far, std::max(tz1, tz2));
+
+    return t_far >= t_near;
+}
+
 void MoBBox::expandToInclude(const float3& point)
 {
     min.x = std::min(min.x, point.x);
@@ -60,6 +84,145 @@ void MoBBox::expandToInclude(const MoBBox& box)
     max.z = std::max(max.z, box.max.z);
 }
 
+// Adapted from the Möller–Trumbore intersection algorithm
+bool moRayTriangleIntersect(const MoRay &ray, const MoTriangle &triangle,
+                            float &t, float &u, float &v, bool backfaceCulling)
+{
+    const float EPSILON = 0.0000001f;
+    const float3 & vertex0 = triangle.v0;
+    const float3 & vertex1 = triangle.v1;
+    const float3 & vertex2 = triangle.v2;
+    const float3 edge1 = vertex1 - vertex0;
+    const float3 edge2 = vertex2 - vertex0;
+    const float3 h = linalg::cross(ray.direction, edge2);
+    const float a = linalg::dot(edge1, h);
+    if (a > -EPSILON && a < EPSILON)
+    {
+        // This ray is parallel to this triangle.
+        return false;
+    }
+
+    const float f = 1.0/a;
+    const float3 s = ray.origin - vertex0;
+    u = f * linalg::dot(s, h);
+    if (u < 0.0 || u > 1.0)
+    {
+        return false;
+    }
+
+    const float3 q = linalg::cross(s, edge1);
+    v = f * linalg::dot(ray.direction, q);
+    if (v < 0.0 || u + v > 1.0)
+    {
+        return false;
+    }
+
+    if (backfaceCulling)
+    {
+        const float3 n = linalg::cross(edge1, edge2);
+        if (linalg::dot(ray.direction, n) >= 0.0)
+            return false;
+    }
+
+    // At this stage we can compute t to find out where the intersection point is on the line.
+    t = f * linalg::dot(edge2, q);
+    if (t > EPSILON)
+    {
+        // ray intersection
+        return true;
+    }
+
+    // This means that there is a line intersection but not a ray intersection.
+    return false;
+}
+
+bool moIntersectBVH(MoBVH bvh, const MoRay& ray, MoIntersectResult& intersection, bool backfaceCulling)
+{
+    intersection.distance = std::numeric_limits<float>::max();
+    float bbhits[4];
+    std::uint32_t closer, other;
+
+    // Working set
+    struct Traversal
+    {
+        std::uint32_t index;
+        float distance;
+    };
+    Traversal traversal[64];
+    std::int32_t stackPtr = 0;
+
+    traversal[stackPtr].index = 0;
+    traversal[stackPtr].distance = std::numeric_limits<float>::lowest();
+
+    while (stackPtr >= 0)
+    {
+        std::uint32_t index = traversal[stackPtr].index;
+        float near = traversal[stackPtr].distance;
+        stackPtr--;
+        const MoBVHSplitNode& node = bvh->pSplitNodes[index];
+
+        if (near > intersection.distance)
+        {
+            continue;
+        }
+
+        if (node.offset == 0)
+        {
+            float t, u, v;
+            const MoTriangle& triangle = bvh->pTriangles[node.start];
+            if (moRayTriangleIntersect(ray, triangle, t, u, v, backfaceCulling))
+            {
+                if (t <= 0.0)
+                {
+                    intersection.pTriangle = &triangle;
+                    return true;
+                }
+                if (t < intersection.distance)
+                {
+                    intersection.pTriangle = &triangle;
+                    intersection.barycentric = {1.f - u - v, u, v};
+                    intersection.distance = t;
+                }
+            }
+        }
+        else
+        {
+            bool hitLeft =  bvh->pSplitNodes[index + 1].boundingBox.intersect(ray, bbhits[0], bbhits[1]);
+            bool hitRight = bvh->pSplitNodes[index + node.offset].boundingBox.intersect(ray, bbhits[2], bbhits[3]);
+
+            if (hitLeft && hitRight)
+            {
+                closer = index + 1;
+                other = index + node.offset;
+
+                if (bbhits[2] < bbhits[0])
+                {
+                    std::swap(bbhits[0], bbhits[2]);
+                    std::swap(bbhits[1], bbhits[3]);
+                    std::swap(closer, other);
+                }
+
+                ++stackPtr;
+                traversal[stackPtr] = Traversal{other, bbhits[2]};
+                ++stackPtr;
+                traversal[stackPtr] = Traversal{closer, bbhits[0]};
+            }
+            else if (hitLeft)
+            {
+                ++stackPtr;
+                traversal[stackPtr] = Traversal{index + 1, bbhits[0]};
+            }
+            else if (hitRight)
+            {
+                ++stackPtr;
+                traversal[stackPtr] = Traversal{index + node.offset, bbhits[2]};
+            }
+        }
+    }
+
+    return intersection.distance < std::numeric_limits<float>::max();
+}
+
 void moCreateBVH(const aiMesh * ai_mesh, MoBVH *pBVH)
 {
     MoBVH bvh = *pBVH = new MoBVH_T();
@@ -77,15 +240,6 @@ void moCreateBVH(const aiMesh * ai_mesh, MoBVH *pBVH)
             triangle.v0 = float3((float*)&ai_mesh->mVertices[face->mIndices[0]]);
             triangle.v1 = float3((float*)&ai_mesh->mVertices[face->mIndices[1]]);
             triangle.v2 = float3((float*)&ai_mesh->mVertices[face->mIndices[2]]);
-            //if (ai_mesh->HasTextureCoords(0))
-            //{
-            //    triangle.uv0 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[0]]);
-            //    triangle.uv1 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[1]]);
-            //    triangle.uv2 = float2((float*)&ai_mesh->mTextureCoords[0][face->mIndices[2]]);
-            //}
-            //triangle.n0 = float3((float*)&ai_mesh->mNormals[face->mIndices[0]]);
-            //triangle.n1 = float3((float*)&ai_mesh->mNormals[face->mIndices[1]]);
-            //triangle.n2 = float3((float*)&ai_mesh->mNormals[face->mIndices[2]]);
             break;
         }
         default:

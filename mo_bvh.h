@@ -3,6 +3,20 @@
 #include <linalg.h>
 #include <iosfwd>
 
+class MoRay
+{
+public:
+    MoRay() {}
+    MoRay(const linalg::aliases::float3& o, const linalg::aliases::float3& d)
+        : origin(o)
+        , direction(d)
+        , oneOverDirection(1 / direction.x, 1 / direction.y, 1 / direction.z) {}
+
+    alignas(16) linalg::aliases::float3 origin;
+    alignas(16) linalg::aliases::float3 direction;
+    alignas(16) linalg::aliases::float3 oneOverDirection;
+};
+
 class MoBBox
 {
 public:
@@ -11,6 +25,7 @@ public:
     MoBBox(const linalg::aliases::float3& point);
 
     std::uint32_t longestSide() const;
+    bool intersect(const MoRay& ray, float& t_near, float& t_far) const;
     void expandToInclude(const linalg::aliases::float3& point);
     void expandToInclude(const MoBBox& box);
 
@@ -52,6 +67,16 @@ typedef struct MoBVH_T
     const MoBVHSplitNode* pSplitNodes;
     std::uint32_t         splitNodeCount;
 }* MoBVH;
+
+struct MoIntersectResult
+{
+    const MoTriangle* pTriangle;
+    linalg::aliases::float3 barycentric;
+    float distance;
+};
+
+bool moRayTriangleIntersect(const MoRay& ray, const MoTriangle& triangle, float &t, float &u, float &v, bool backfaceCulling = false);
+bool moIntersectBVH(MoBVH bvh, const MoRay& ray, MoIntersectResult& intersection, bool backfaceCulling = false);
 
 struct aiMesh;
 void moCreateBVH(const aiMesh* ai_mesh, MoBVH *pBVH);
