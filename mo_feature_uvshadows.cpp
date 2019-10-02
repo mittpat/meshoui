@@ -1,61 +1,58 @@
-#pragma once
+#include "mo_feature_uvshadows.h"
+#include "mo_dispatch.h"
+#include "mo_mesh.h"
 
-#include "mo_buffer.h"
-#include "mo_bvh.h"
-#include "mo_pipeline.h"
+typedef struct MoFeatureUVShadows_T
+{
+    void onMeshCreated(MoMesh mesh)
+    {
+        // todo
+    }
 
-#include <linalg.h>
+    void onMeshDestroyed(MoMesh mesh)
+    {
+        // todo
+    }
 
-typedef struct MoMeshRegistration {
-    VkPipelineLayout pipelineLayout;
-    VkDescriptorSet descriptorSet;
-} MoMeshRegistration;
+    void* previousUserPointer;
+    MoDispatchMeshFun previousMeshCreatedCB;
+    MoDispatchMeshFun previousMeshDestroyedCB;
+}* MoFeatureUVShadows;
 
-typedef struct MoMesh_T {
-    // runtime
-    MoDeviceBuffer verticesBuffer;
-    MoDeviceBuffer textureCoordsBuffer;
-    MoDeviceBuffer normalsBuffer;
-    MoDeviceBuffer tangentsBuffer;
-    MoDeviceBuffer bitangentsBuffer;
-    MoDeviceBuffer indexBuffer;
-    MoDeviceBuffer bvhObjectBuffer;
-    MoDeviceBuffer bvhNodesBuffer;
-    uint32_t indexBufferSize;
+void moCreateFeatureUVShadows(MoFeatureUVShadows *pFeature)
+{
+    MoFeatureUVShadows feature = *pFeature = new MoFeatureUVShadows_T();
+    *feature = {};
 
-    // source
-    const uint32_t*                pIndices;
-    uint32_t                       indexCount;
-    const linalg::aliases::float3* pVertices;
-    uint32_t                       vertexCount;
+    feature->previousUserPointer = moDispatchSetMeshUserPointer(feature);
+    feature->previousMeshCreatedCB = moDispatchSetMeshCreatedCB([](void* userPointer, MoMesh mesh)
+    {
+        MoFeatureUVShadows feature = reinterpret_cast<MoFeatureUVShadows>(userPointer);
+        if (feature->previousMeshCreatedCB)
+        {
+            feature->previousMeshCreatedCB(feature->previousUserPointer, mesh);
+        }
+        feature->onMeshCreated(mesh);
+    });
+    feature->previousMeshDestroyedCB = moDispatchSetMeshDestroyedCB([](void* userPointer, MoMesh mesh)
+    {
+        MoFeatureUVShadows feature = reinterpret_cast<MoFeatureUVShadows>(userPointer);
+        feature->onMeshDestroyed(mesh);
+        if (feature->previousMeshDestroyedCB)
+        {
+            feature->previousMeshDestroyedCB(feature->previousUserPointer, mesh);
+        }
+    });
+}
 
-    // features
-    const MoMeshRegistration* pRegistrations;
-    std::uint32_t registrationCount;
-    MoBVH         bvh;
-}* MoMesh;
+void moDestroyFeatureUVShadows(MoFeatureUVShadows feature)
+{
+    moDispatchSetMeshUserPointer(feature->previousUserPointer);
+    moDispatchSetMeshCreatedCB(feature->previousMeshCreatedCB);
+    moDispatchSetMeshDestroyedCB(feature->previousMeshDestroyedCB);
 
-typedef struct MoMeshCreateInfo {
-    const uint32_t*                pIndices;
-    uint32_t                       indexCount;
-    const linalg::aliases::float3* pVertices;
-    const linalg::aliases::float2* pTextureCoords;
-    const linalg::aliases::float3* pNormals;
-    const linalg::aliases::float3* pTangents;
-    const linalg::aliases::float3* pBitangents;
-    uint32_t                       vertexCount;
-} MoMeshCreateInfo;
-
-// upload a new mesh to the GPU and return a handle
-void moCreateMesh(const MoMeshCreateInfo* pCreateInfo, MoMesh* pMesh);
-void moRegisterMesh(MoPipelineLayout pipeline, MoMesh mesh);
-
-// free a mesh
-void moDestroyMesh(MoMesh mesh);
-
-// draw a mesh
-void moBindMesh(VkCommandBuffer commandBuffer, MoMesh mesh, VkPipelineLayout pipelineLayout);
-void moDrawMesh(VkCommandBuffer commandBuffer, MoMesh mesh);
+    delete feature;
+}
 
 /*
 ------------------------------------------------------------------------------

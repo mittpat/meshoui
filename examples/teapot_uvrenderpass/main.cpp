@@ -2,7 +2,9 @@
 #include <GLFW/glfw3.h>
 
 #include "mo_device.h"
+#include "mo_dispatch.h"
 #include "mo_example_utils.h"
+#include "mo_feature_uvshadows.h"
 #include "mo_glfw_utils.h"
 #include "mo_material.h"
 #include "mo_mesh.h"
@@ -41,6 +43,9 @@ struct MoCamera
 
 int main(int argc, char** argv)
 {
+    MoFeatureUVShadows featureShadows;
+    moCreateFeatureUVShadows(&featureShadows); //wip
+
     GLFWwindow*                  window = nullptr;
     VkInstance                   instance = VK_NULL_HANDLE;
     MoDevice                     device = VK_NULL_HANDLE;
@@ -463,6 +468,8 @@ int main(int argc, char** argv)
 
     glfwDestroyWindow(window);
     glfwTerminate();
+
+    moDestroyFeatureUVShadows(featureShadows);
 
     return 0;
 }

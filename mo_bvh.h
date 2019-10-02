@@ -78,8 +78,8 @@ struct MoIntersectResult
 bool moRayTriangleIntersect(const MoRay& ray, const MoTriangle& triangle, float &t, float &u, float &v, bool backfaceCulling = false);
 bool moIntersectBVH(MoBVH bvh, const MoRay& ray, MoIntersectResult& intersection, bool backfaceCulling = false);
 
-struct aiMesh;
-void moCreateBVH(const aiMesh* ai_mesh, MoBVH *pBVH);
+typedef struct MoMesh_T* MoMesh;
+void moCreateBVH(MoMesh mesh, MoBVH *pBVH);
 void moDestroyBVH(MoBVH bvh);
 
 /*

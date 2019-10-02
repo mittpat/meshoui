@@ -1,61 +1,45 @@
-#pragma once
+#include "mo_dispatch.h"
 
-#include "mo_buffer.h"
-#include "mo_bvh.h"
-#include "mo_pipeline.h"
+void* g_DispatchMeshUserPointer = nullptr;
+MoDispatchMeshFun g_DispatchSetMeshCreatedCB = nullptr;
+MoDispatchMeshFun g_DispatchSetMeshDestroyedCB = nullptr;
 
-#include <linalg.h>
+void *moDispatchSetMeshUserPointer(void *pUser)
+{
+    void* previous = g_DispatchMeshUserPointer;
+    g_DispatchMeshUserPointer = pUser;
+    return previous;
+}
 
-typedef struct MoMeshRegistration {
-    VkPipelineLayout pipelineLayout;
-    VkDescriptorSet descriptorSet;
-} MoMeshRegistration;
+MoDispatchMeshFun moDispatchSetMeshCreatedCB(MoDispatchMeshFun fun)
+{
+    MoDispatchMeshFun previous = g_DispatchSetMeshCreatedCB;
+    g_DispatchSetMeshCreatedCB = fun;
+    return previous;
+}
 
-typedef struct MoMesh_T {
-    // runtime
-    MoDeviceBuffer verticesBuffer;
-    MoDeviceBuffer textureCoordsBuffer;
-    MoDeviceBuffer normalsBuffer;
-    MoDeviceBuffer tangentsBuffer;
-    MoDeviceBuffer bitangentsBuffer;
-    MoDeviceBuffer indexBuffer;
-    MoDeviceBuffer bvhObjectBuffer;
-    MoDeviceBuffer bvhNodesBuffer;
-    uint32_t indexBufferSize;
+MoDispatchMeshFun moDispatchSetMeshDestroyedCB(MoDispatchMeshFun fun)
+{
+    MoDispatchMeshFun previous = g_DispatchSetMeshDestroyedCB;
+    g_DispatchSetMeshDestroyedCB = fun;
+    return previous;
+}
 
-    // source
-    const uint32_t*                pIndices;
-    uint32_t                       indexCount;
-    const linalg::aliases::float3* pVertices;
-    uint32_t                       vertexCount;
+void moDispatchMeshCreated(MoMesh mesh)
+{
+    if (g_DispatchSetMeshCreatedCB)
+    {
+        g_DispatchSetMeshCreatedCB(g_DispatchMeshUserPointer, mesh);
+    }
+}
 
-    // features
-    const MoMeshRegistration* pRegistrations;
-    std::uint32_t registrationCount;
-    MoBVH         bvh;
-}* MoMesh;
-
-typedef struct MoMeshCreateInfo {
-    const uint32_t*                pIndices;
-    uint32_t                       indexCount;
-    const linalg::aliases::float3* pVertices;
-    const linalg::aliases::float2* pTextureCoords;
-    const linalg::aliases::float3* pNormals;
-    const linalg::aliases::float3* pTangents;
-    const linalg::aliases::float3* pBitangents;
-    uint32_t                       vertexCount;
-} MoMeshCreateInfo;
-
-// upload a new mesh to the GPU and return a handle
-void moCreateMesh(const MoMeshCreateInfo* pCreateInfo, MoMesh* pMesh);
-void moRegisterMesh(MoPipelineLayout pipeline, MoMesh mesh);
-
-// free a mesh
-void moDestroyMesh(MoMesh mesh);
-
-// draw a mesh
-void moBindMesh(VkCommandBuffer commandBuffer, MoMesh mesh, VkPipelineLayout pipelineLayout);
-void moDrawMesh(VkCommandBuffer commandBuffer, MoMesh mesh);
+void moDispatchMeshDestroyed(MoMesh mesh)
+{
+    if (g_DispatchSetMeshDestroyedCB)
+    {
+        g_DispatchSetMeshDestroyedCB(g_DispatchMeshUserPointer, mesh);
+    }
+}
 
 /*
 ------------------------------------------------------------------------------

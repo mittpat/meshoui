@@ -1,6 +1,5 @@
 #include "mo_node.h"
 #include "mo_array.h"
-#include "mo_bvh.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -161,7 +160,6 @@ void moCreateScene(MoCommandBuffer commandBuffer, const char *filename, MoScene*
             info.pTangents = tangents.data();
             info.pBitangents = bitangents.data();
 
-            moCreateBVH(mesh, &info.bvh);
             moCreateMesh(&info, const_cast<MoMesh*>(&scene->pMeshes[meshIdx]));
         }
 

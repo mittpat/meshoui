@@ -1,8 +1,8 @@
 #include "mo_bvh.h"
 #include "mo_array.h"
+#include "mo_mesh.h"
 
-#include <assimp/mesh.h>
-
+#include <algorithm>
 #include <cstdint>
 
 using namespace linalg;
@@ -223,29 +223,19 @@ bool moIntersectBVH(MoBVH bvh, const MoRay& ray, MoIntersectResult& intersection
     return intersection.distance < std::numeric_limits<float>::max();
 }
 
-void moCreateBVH(const aiMesh * ai_mesh, MoBVH *pBVH)
+void moCreateBVH(MoMesh mesh, MoBVH *pBVH)
 {
     MoBVH bvh = *pBVH = new MoBVH_T();
     *bvh = {};
 
-    carray_resize(&bvh->pTriangles, &bvh->triangleCount, ai_mesh->mNumFaces);
-    for (std::uint32_t faceIdx = 0; faceIdx < ai_mesh->mNumFaces; ++faceIdx)
+    carray_resize(&bvh->pTriangles, &bvh->triangleCount, mesh->indexCount / 3);
+    for (std::uint32_t faceIdx = 0; faceIdx < mesh->indexCount / 3; ++faceIdx)
     {
-        const auto* face = &ai_mesh->mFaces[faceIdx];
-        switch (face->mNumIndices)
-        {
-        case 3:
-        {
-            MoTriangle& triangle = const_cast<MoTriangle&>(bvh->pTriangles[faceIdx]);
-            triangle.v0 = float3((float*)&ai_mesh->mVertices[face->mIndices[0]]);
-            triangle.v1 = float3((float*)&ai_mesh->mVertices[face->mIndices[1]]);
-            triangle.v2 = float3((float*)&ai_mesh->mVertices[face->mIndices[2]]);
-            break;
-        }
-        default:
-            printf("parseAiMesh(): Mesh %s, Face %d has %d vertices.\n", ai_mesh->mName.C_Str(), faceIdx, face->mNumIndices);
-            break;
-        }
+        const auto* face = &mesh->pIndices[faceIdx*3];
+        MoTriangle& triangle = const_cast<MoTriangle&>(bvh->pTriangles[faceIdx]);
+        triangle.v0 = mesh->pVertices[face[0]];
+        triangle.v1 = mesh->pVertices[face[1]];
+        triangle.v2 = mesh->pVertices[face[2]];
     }
 
     enum : std::uint32_t

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 
 static std::uint32_t carray_nextPowerOfTwo(std::uint32_t v)
 {
@@ -56,7 +57,7 @@ inline void carray_push_back(T** array, std::uint32_t* size, T value)
 }
 
 template<typename T>
-void carray_copy(const T* source, const T* destination, std::uint32_t count)
+void carray_copy(const T* destination, const T* source, std::uint32_t count)
 {
     T* lsource = const_cast<T*>(source);
     T* ldestination = const_cast<T*>(destination);
@@ -65,9 +66,9 @@ void carray_copy(const T* source, const T* destination, std::uint32_t count)
 }
 
 template<typename T>
-inline void carray_copy(T* source, T* destination, std::uint32_t count)
+inline void carray_copy(T* destination, T* source, std::uint32_t count)
 {
-    carray_push_back(const_cast<const T*>(source), const_cast<const T*>(destination), count);
+    carray_push_back(const_cast<const T*>(destination), const_cast<const T*>(source), count);
 }
 
 template<typename T>

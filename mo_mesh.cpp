@@ -3,6 +3,7 @@
 #include "mo_array.h"
 #include "mo_bvh.h"
 #include "mo_device.h"
+#include "mo_dispatch.h"
 #include "mo_swapchain.h"
 
 #include <cstdint>
@@ -17,8 +18,8 @@ void moCreateMesh(const MoMeshCreateInfo *pCreateInfo, MoMesh *pMesh)
     MoMesh mesh = *pMesh = new MoMesh_T();
     *mesh = {};
 
+    // runtime
     mesh->indexBufferSize = pCreateInfo->indexCount;
-    mesh->vertexCount = pCreateInfo->vertexCount;
     const VkDeviceSize index_size = pCreateInfo->indexCount * sizeof(uint32_t);
     moCreateBuffer(&mesh->verticesBuffer, pCreateInfo->vertexCount * sizeof(float3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     moCreateBuffer(&mesh->textureCoordsBuffer, pCreateInfo->vertexCount * sizeof(float2), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -33,15 +34,23 @@ void moCreateMesh(const MoMeshCreateInfo *pCreateInfo, MoMesh *pMesh)
     moUploadBuffer(mesh->bitangentsBuffer, pCreateInfo->vertexCount * sizeof(float3), pCreateInfo->pBitangents);
     moUploadBuffer(mesh->indexBuffer, index_size, pCreateInfo->pIndices);
 
-    if (pCreateInfo->bvh && pCreateInfo->bvh->splitNodeCount)
-    {
-        VkDeviceSize objectsSize = sizeof(MoTriangle) * pCreateInfo->bvh->triangleCount;
-        moCreateBuffer(&mesh->bvhObjectBuffer, objectsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-        moUploadBuffer(mesh->bvhObjectBuffer, objectsSize, pCreateInfo->bvh->pTriangles);
+    // source
+    carray_resize(&mesh->pIndices, &mesh->indexCount, pCreateInfo->indexCount);
+    carray_copy(mesh->pIndices, pCreateInfo->pIndices, pCreateInfo->indexCount);
+    carray_resize(&mesh->pVertices, &mesh->vertexCount, pCreateInfo->vertexCount);
+    carray_copy(mesh->pVertices, pCreateInfo->pVertices, pCreateInfo->vertexCount);
 
-        VkDeviceSize nodesSize = sizeof(MoBVHSplitNode) * pCreateInfo->bvh->splitNodeCount;
+    // feature
+    moCreateBVH(mesh, &mesh->bvh);
+    if (mesh->bvh && mesh->bvh->splitNodeCount)
+    {
+        VkDeviceSize objectsSize = sizeof(MoTriangle) * mesh->bvh->triangleCount;
+        moCreateBuffer(&mesh->bvhObjectBuffer, objectsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        moUploadBuffer(mesh->bvhObjectBuffer, objectsSize, mesh->bvh->pTriangles);
+
+        VkDeviceSize nodesSize = sizeof(MoBVHSplitNode) * mesh->bvh->splitNodeCount;
         moCreateBuffer(&mesh->bvhNodesBuffer, nodesSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-        moUploadBuffer(mesh->bvhNodesBuffer, nodesSize, pCreateInfo->bvh->pSplitNodes);
+        moUploadBuffer(mesh->bvhNodesBuffer, nodesSize, mesh->bvh->pSplitNodes);
     }
     else
     {
@@ -55,7 +64,7 @@ void moCreateMesh(const MoMeshCreateInfo *pCreateInfo, MoMesh *pMesh)
         moUploadBuffer(mesh->bvhNodesBuffer, size, &data);
     }
 
-    mesh->bvh = pCreateInfo->bvh;
+    moDispatchMeshCreated(mesh);
 }
 
 void moRegisterMesh(MoPipelineLayout pipeline, MoMesh mesh)
@@ -100,6 +109,10 @@ void moRegisterMesh(MoPipelineLayout pipeline, MoMesh mesh)
 void moDestroyMesh(MoMesh mesh)
 {
     vkQueueWaitIdle(g_Device->queue);
+
+    moDispatchMeshDestroyed(mesh);
+
+    // runtime
     moDeleteBuffer(mesh->verticesBuffer);
     moDeleteBuffer(mesh->textureCoordsBuffer);
     moDeleteBuffer(mesh->normalsBuffer);
@@ -108,6 +121,12 @@ void moDestroyMesh(MoMesh mesh)
     moDeleteBuffer(mesh->indexBuffer);
     moDeleteBuffer(mesh->bvhObjectBuffer);
     moDeleteBuffer(mesh->bvhNodesBuffer);
+
+    // source
+    carray_free(mesh->pIndices, &mesh->indexCount);
+    carray_free(mesh->pVertices, &mesh->vertexCount);
+
+    // features
     for (std::uint32_t i = 0; i < mesh->registrationCount; ++i)
     {
         vkFreeDescriptorSets(g_Device->device, g_Device->descriptorPool, 1, &mesh->pRegistrations[i].descriptorSet);
