@@ -10,14 +10,17 @@
 #include "mo_pipeline_utils.h"
 #include "mo_swapchain.h"
 
-#include <experimental/filesystem>
+#include <filesystem>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 
 int main(int argc, char** argv)
 {
+    printf("[cube_passthrough] main() starting\n");
+    fflush(stdout);
+
     GLFWwindow*                  window = nullptr;
     VkInstance                   instance = VK_NULL_HANDLE;
     MoDevice                     device = VK_NULL_HANDLE;
@@ -27,8 +30,14 @@ int main(int argc, char** argv)
 
     // Initialization
     {
+        printf("[cube_passthrough] Initializing GLFW...\n");
+        fflush(stdout);
+
         glfwSetErrorCallback(moGlfwErrorCallback);
         glfwInit();
+
+        printf("[cube_passthrough] GLFW initialized\n");
+        fflush(stdout);
         int width, height;
         width = 1920 / 2;
         height = 1080 / 2;
@@ -64,6 +73,9 @@ int main(int argc, char** argv)
 
         // Create device
         {
+            printf("[cube_passthrough] About to create device...\n");
+            fflush(stdout);
+
             MoDeviceCreateInfo info = {};
             info.instance = instance;
             info.surface = surface;
@@ -73,46 +85,111 @@ int main(int argc, char** argv)
             info.requestColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
             info.pSurfaceFormat = &surfaceFormat;
             info.pCheckVkResultFn = moVkCheckResult;
+
+            printf("[cube_passthrough] Calling moCreateDevice...\n");
+            fflush(stdout);
+
             moCreateDevice(&info, &device);
+
+            printf("[cube_passthrough] Device created: %p\n", (void*)device);
+            fflush(stdout);
         }
 
         // Create SwapChain, RenderPass, Framebuffer, etc.
         {
+            printf("[cube_passthrough] About to create swapchain...\n");
+            fflush(stdout);
+
             MoSwapChainCreateInfo info = {};
             info.surface = surface;
             info.surfaceFormat = surfaceFormat;
             info.extent = {(uint32_t)width, (uint32_t)height};
             info.vsync = VK_TRUE;
             info.pCheckVkResultFn = moVkCheckResult;
+
+            printf("[cube_passthrough] Calling moCreateSwapChain...\n");
+            fflush(stdout);
+
             moCreateSwapChain(&info, &swapChain);
+
+            printf("[cube_passthrough] SwapChain created: %p\n", (void*)swapChain);
+            fflush(stdout);
         }
     }
+
+    printf("[cube_passthrough] About to create pipeline layout...\n");
+    fflush(stdout);
 
     MoPipelineLayout pipelineLayout;
     moCreatePipelineLayout(&pipelineLayout);
 
+    printf("[cube_passthrough] Pipeline layout created: %p\n", (void*)pipelineLayout);
+    fflush(stdout);
+
     // Passthrough
+    printf("[cube_passthrough] About to create pipeline...\n");
+    fflush(stdout);
+
     VkPipeline passthroughPipeline;
     moCreatePipeline(swapChain->renderPass, pipelineLayout->pipelineLayout, "passthrough.glsl", &passthroughPipeline, MO_PIPELINE_FEATURE_NONE);
+
+    printf("[cube_passthrough] Pipeline created: %p\n", (void*)passthroughPipeline);
+    fflush(stdout);
+
+    printf("[cube_passthrough] About to create demo cube...\n");
+    fflush(stdout);
 
     MoMesh cubeMesh;
     moCreateDemoCube(&cubeMesh, float3(0.5,0.5,0.5));
 
+    printf("[cube_passthrough] Demo cube created: %p\n", (void*)cubeMesh);
+    fflush(stdout);
+
+    printf("[cube_passthrough] About to enter main loop\n");
+    fflush(stdout);
+
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
+        printf("[cube_passthrough] Main loop iteration starting\n");
+        fflush(stdout);
+
         glfwPollEvents();
+
+        printf("[cube_passthrough] About to begin swapchain\n");
+        fflush(stdout);
 
         // Frame begin
         MoCommandBuffer currentCommandBuffer;
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
+
+        printf("[cube_passthrough] Swapchain begun\n");
+        fflush(stdout);
+
         moBeginRenderPass(swapChain, currentCommandBuffer);
-        moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+
+        printf("[cube_passthrough] Render pass begun\n");
+        fflush(stdout);
+
+        moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
+
+        printf("[cube_passthrough] Pipeline bound\n");
+        fflush(stdout);
+
         moDrawMesh(currentCommandBuffer.buffer, cubeMesh);
 
+        printf("[cube_passthrough] Mesh drawn\n");
+        fflush(stdout);
+
         // Frame end
+        printf("[cube_passthrough] About to end swapchain\n");
+        fflush(stdout);
+
         VkResult err = moEndSwapChain(swapChain, &imageAcquiredSemaphore);
+
+        printf("[cube_passthrough] Swapchain ended, err=%d\n", err);
+        fflush(stdout);
         if (err == VK_ERROR_OUT_OF_DATE_KHR)
         {
             int width = 0, height = 0;

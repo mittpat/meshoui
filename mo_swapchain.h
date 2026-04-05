@@ -9,6 +9,7 @@
 #include <linalg.h>
 
 #define MO_FRAME_COUNT 2
+#define MO_SWAPCHAIN_IMAGE_COUNT 8  // Support up to 8 swapchain images
 
 typedef struct MoSwapChainCreateInfo {
     VkSurfaceKHR                 surface;
@@ -29,9 +30,11 @@ typedef struct MoSwapChainRecreateInfo {
 } MoSwapChainRecreateInfo;
 
 typedef struct MoSwapChain_T {
-    MoSwapBuffer    images[MO_FRAME_COUNT];
-    MoCommandBuffer frames[MO_FRAME_COUNT];
-    uint32_t        frameIndex;
+    MoSwapBuffer    images[MO_SWAPCHAIN_IMAGE_COUNT];  // Array of swapchain images
+    MoCommandBuffer frames[MO_FRAME_COUNT];             // Command buffers for frame pipelining
+    uint32_t        frameIndex;                        // Current swapchain image index (from vkAcquireNextImageKHR)
+    uint32_t        currentFrame;                      // Our frame counter (0, 1, 0, 1, ...) for command buffers
+    uint32_t        imageCount;                        // Actual number of swapchain images
     MoImageBuffer   depthBuffer;
     VkSwapchainKHR  swapChainKHR;
     VkRenderPass    renderPass;

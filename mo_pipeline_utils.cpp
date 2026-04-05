@@ -1,29 +1,36 @@
 #include "mo_pipeline_utils.h"
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <fstream>
 #include <vector>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 
 void moCreatePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, const char* glslFilename, VkPipeline *pPipeline, MoPipelineCreateFlags flags)
 {
+    // Load shaders into vectors BEFORE creating MoPipelineCreateInfo that will reference them
+    std::vector<char> mo_phong_shader_vert_spv;
+    std::vector<char> mo_phong_shader_frag_spv;
+
+    {
+        path glslFilepath(glslFilename);
+        path vertPath = glslFilepath;
+        vertPath.replace_extension("vert.spv");
+        std::ifstream fileStream(vertPath, std::ifstream::binary);
+        mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+    {
+        path glslFilepath(glslFilename);
+        path fragPath = glslFilepath;
+        fragPath.replace_extension("frag.spv");
+        std::ifstream fileStream(fragPath, std::ifstream::binary);
+        mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    }
+
     MoPipelineCreateInfo info = {};
     info.flags = flags;
     info.pipelineLayout = pipelineLayout;
     info.renderPass = renderPass;
-    std::vector<char> mo_phong_shader_vert_spv;
-    {
-        std::filesystem::path glslFilepath(glslFilename);
-        std::ifstream fileStream(glslFilepath.replace_extension("vert.spv"), std::ifstream::binary);
-        mo_phong_shader_vert_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
-    std::vector<char> mo_phong_shader_frag_spv;
-    {
-        std::filesystem::path glslFilepath(glslFilename);
-        std::ifstream fileStream(glslFilepath.replace_extension("frag.spv"), std::ifstream::binary);
-        mo_phong_shader_frag_spv = std::vector<char>((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
-    }
     info.pVertexShader = (std::uint32_t*)mo_phong_shader_vert_spv.data();
     info.vertexShaderSize = mo_phong_shader_vert_spv.size();
     info.pFragmentShader = (std::uint32_t*)mo_phong_shader_frag_spv.data();

@@ -14,10 +14,10 @@
 
 #include <linalg.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <functional>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 
@@ -335,7 +335,7 @@ int main(int argc, char** argv)
                 VkRect2D scissor{ { 0, 0 },{ extentUV.width, extentUV.height } };
                 vkCmdSetScissor(currentCommandBuffer.buffer, 0, 1, &scissor);
             }
-            moBindPipeline(currentCommandBuffer.buffer, occlusionPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+            moBindPipeline(currentCommandBuffer.buffer, occlusionPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
             if (scene)
             {
                 MoPushConstant pmv = {};
@@ -374,7 +374,7 @@ int main(int argc, char** argv)
                     VkRect2D scissor{ { 0, 0 },{ extentUV.width, extentUV.height } };
                     vkCmdSetScissor(currentCommandBuffer.buffer, 0, 1, &scissor);
                 }
-                moBindPipeline(currentCommandBuffer.buffer, occlusionRepairPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+                moBindPipeline(currentCommandBuffer.buffer, occlusionRepairPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
                 if (scene)
                 {
                     MoPushConstant pmv = {};
@@ -403,7 +403,7 @@ int main(int argc, char** argv)
         }
 
         moBeginRenderPass(swapChain, currentCommandBuffer);
-        moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         {
             MoPushConstant pmv = {};
             pmv.model = identity;
@@ -411,7 +411,7 @@ int main(int argc, char** argv)
             vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
             moDrawMesh(currentCommandBuffer.buffer, sphereMesh);
         }
-        moBindPipeline(currentCommandBuffer.buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         if (scene)
         {
             MoPushConstant pmv = {};

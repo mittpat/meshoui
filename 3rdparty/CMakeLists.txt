@@ -112,7 +112,8 @@ add_library(imgui
     imgui/imgui.cpp       imgui/imgui_internal.h  imgui/examples/imgui_impl_glfw.h     imgui/imstb_truetype.h
     imgui/imgui_demo.cpp  imgui/imgui_widgets.cpp imgui/examples/imgui_impl_vulkan.cpp
     imgui/imgui_draw.cpp  imgui/imstb_rectpack.h  imgui/examples/imgui_impl_vulkan.h)
-target_include_directories(imgui PUBLIC imgui PRIVATE ${Vulkan_INCLUDE_DIR})
+target_include_directories(imgui PUBLIC imgui PRIVATE ${Vulkan_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include)
+target_link_libraries(imgui PUBLIC glfw ${Vulkan_LIBRARIES})
 target_compile_definitions(imgui PUBLIC -DIMGUI_IMPL_API=)
 
 # linalg

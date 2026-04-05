@@ -50,7 +50,8 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
     if (pCreateInfo->offscreen)
     {
         swapChain->extent = pCreateInfo->extent;
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        swapChain->imageCount = MO_FRAME_COUNT;  // Offscreen mode uses MO_FRAME_COUNT images
+        for (uint32_t i = 0; i < MO_FRAME_COUNT; ++i)
         {
             {
                 VkImageCreateInfo info = {};
@@ -119,11 +120,17 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         uint32_t backBufferCount = 0;
         err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, NULL);
         pCreateInfo->pCheckVkResultFn(err);
-        VkImage backBuffer[MO_FRAME_COUNT] = {};
+
+        // Support up to MO_SWAPCHAIN_IMAGE_COUNT images
+        VkImage backBuffer[MO_SWAPCHAIN_IMAGE_COUNT] = {};
+        if (backBufferCount > MO_SWAPCHAIN_IMAGE_COUNT) {
+            backBufferCount = MO_SWAPCHAIN_IMAGE_COUNT;
+        }
         err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, backBuffer);
         pCreateInfo->pCheckVkResultFn(err);
 
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        swapChain->imageCount = backBufferCount;
+        for (uint32_t i = 0; i < backBufferCount; ++i)
         {
             swapChain->images[i].back = backBuffer[i];
         }
@@ -188,11 +195,14 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         info.components.a = VK_COMPONENT_SWIZZLE_A;
         VkImageSubresourceRange image_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
         info.subresourceRange = image_range;
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount && i < MO_SWAPCHAIN_IMAGE_COUNT; ++i)
         {
-            info.image = swapChain->images[i].back;
-            err = vkCreateImageView(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].view);
-            pCreateInfo->pCheckVkResultFn(err);
+            if (swapChain->images[i].back != VK_NULL_HANDLE)
+            {
+                info.image = swapChain->images[i].back;
+                err = vkCreateImageView(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].view);
+                pCreateInfo->pCheckVkResultFn(err);
+            }
         }
     }
 
@@ -209,11 +219,14 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         info.width = swapChain->extent.width;
         info.height = swapChain->extent.height;
         info.layers = 1;
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount && i < MO_SWAPCHAIN_IMAGE_COUNT; ++i)
         {
-            attachment[0] = swapChain->images[i].view;
-            err = vkCreateFramebuffer(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].front);
-            pCreateInfo->pCheckVkResultFn(err);
+            if (swapChain->images[i].view != VK_NULL_HANDLE)
+            {
+                attachment[0] = swapChain->images[i].view;
+                err = vkCreateFramebuffer(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].front);
+                pCreateInfo->pCheckVkResultFn(err);
+            }
         }
     }
 
@@ -228,14 +241,18 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     g_Device->pCheckVkResultFn(err);
 
     moDeleteBuffer(swapChain->depthBuffer);
-    for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+    for (uint32_t i = 0; i < swapChain->imageCount && i < MO_SWAPCHAIN_IMAGE_COUNT; ++i)
     {
-        vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
-        vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
+        if (swapChain->images[i].view != VK_NULL_HANDLE)
+            vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
+        if (swapChain->images[i].front != VK_NULL_HANDLE)
+            vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
         if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
         {
-            vkFreeMemory(g_Device->device, swapChain->images[i].memory, VK_NULL_HANDLE);
-            vkDestroyImage(g_Device->device, swapChain->images[i].back, VK_NULL_HANDLE);
+            if (swapChain->images[i].memory != VK_NULL_HANDLE)
+                vkFreeMemory(g_Device->device, swapChain->images[i].memory, VK_NULL_HANDLE);
+            if (swapChain->images[i].back != VK_NULL_HANDLE)
+                vkDestroyImage(g_Device->device, swapChain->images[i].back, VK_NULL_HANDLE);
         }
     }
     if (swapChain->renderPass)
@@ -483,7 +500,8 @@ VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaph
 {
     VkResult err;
 
-    MoCommandBuffer currentCommandBuffer = swapChain->frames[swapChain->frameIndex];
+    // Use currentFrame (0, 1, 0, 1, ...) not frameIndex (0-4) for accessing frames array
+    MoCommandBuffer currentCommandBuffer = swapChain->frames[swapChain->currentFrame];
 
     vkCmdEndRenderPass(currentCommandBuffer.buffer);
 
@@ -562,14 +580,18 @@ void moDestroySwapChain(MoSwapChain swapChain)
     }
 
     moDeleteBuffer(swapChain->depthBuffer);
-    for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+    for (uint32_t i = 0; i < swapChain->imageCount && i < MO_SWAPCHAIN_IMAGE_COUNT; ++i)
     {
-        vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
-        vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
+        if (swapChain->images[i].view != VK_NULL_HANDLE)
+            vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
+        if (swapChain->images[i].front != VK_NULL_HANDLE)
+            vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
         if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
         {
-            vkFreeMemory(g_Device->device, swapChain->images[i].memory, VK_NULL_HANDLE);
-            vkDestroyImage(g_Device->device, swapChain->images[i].back, VK_NULL_HANDLE);
+            if (swapChain->images[i].memory != VK_NULL_HANDLE)
+                vkFreeMemory(g_Device->device, swapChain->images[i].memory, VK_NULL_HANDLE);
+            if (swapChain->images[i].back != VK_NULL_HANDLE)
+                vkDestroyImage(g_Device->device, swapChain->images[i].back, VK_NULL_HANDLE);
         }
     }
     vkDestroyRenderPass(g_Device->device, swapChain->renderPass, VK_NULL_HANDLE);

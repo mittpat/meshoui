@@ -5,14 +5,14 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-namespace std { namespace filesystem = experimental::filesystem; }
 using namespace linalg;
 using namespace linalg::aliases;
+using namespace std::filesystem;
 
 void moCreateNode(const aiScene* aScene, MoScene scene, aiNode* aNode, MoNode* pNode)
 {
@@ -88,10 +88,10 @@ void moCreateScene(MoCommandBuffer commandBuffer, const char *filename, MoScene*
              {aiTextureType_NORMALS, &info.textureNormal}};
             for (auto mapping : textureMappings)
             {
-                aiString path;
-                if (AI_SUCCESS == material->GetTexture(mapping.first, 0, &path))
+                aiString texPath;
+                if (AI_SUCCESS == material->GetTexture(mapping.first, 0, &texPath))
                 {
-                    std::filesystem::path filename = parentdirectory / path.C_Str();
+                    std::filesystem::path filename = parentdirectory / texPath.C_Str();
                     if (std::filesystem::exists(filename))
                     {
                         int x, y, n;

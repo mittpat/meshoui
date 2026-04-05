@@ -12,14 +12,14 @@
 
 #include <linalg.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <functional>
 #include <vector>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 
