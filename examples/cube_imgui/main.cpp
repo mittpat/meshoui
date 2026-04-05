@@ -57,7 +57,7 @@ void moGUIDrawBegin()
     ImGui::NewFrame();
 }
 
-bool moGUIFileBrowser(std::experimental::filesystem::path *pCurrentDirectory, std::experimental::filesystem::path *pFileToLoad, const std::vector<std::string>& allowedExtensions = {})
+bool moGUIFileBrowser(std::filesystem::path *pCurrentDirectory, std::filesystem::path *pFileToLoad, const std::vector<std::string>& allowedExtensions = {})
 {
     if (!std::filesystem::equivalent(*pCurrentDirectory, *pCurrentDirectory / ".."))
     {

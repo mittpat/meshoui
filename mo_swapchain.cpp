@@ -220,6 +220,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         }
     }
 
+
     swapChain->clearColor = pCreateInfo->clearColor;
 }
 
@@ -422,6 +423,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
             g_Device->pCheckVkResultFn(err);
         }
     }
+
 }
 
 void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuffer, VkSemaphore *pImageAcquiredSemaphore)
@@ -568,6 +570,7 @@ void moDestroySwapChain(MoSwapChain swapChain)
         vkDestroySemaphore(g_Device->device, swapChain->frames[i].acquired, VK_NULL_HANDLE);
         vkDestroySemaphore(g_Device->device, swapChain->frames[i].complete, VK_NULL_HANDLE);
     }
+
 
     moDeleteBuffer(swapChain->depthBuffer);
     for (uint32_t i = 0; i < swapChain->imageCount; ++i)

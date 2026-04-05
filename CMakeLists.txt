@@ -72,3 +72,6 @@ target_link_libraries(teapot_uvrenderpass PUBLIC meshoui glfw)
 
 add_executable(cave_walking examples/cave_walking/main.cpp)
 target_link_libraries(cave_walking PUBLIC meshoui glfw)
+
+add_executable(launcher examples/launcher/main.cpp)
+target_link_libraries(launcher PUBLIC meshoui glfw imgui)
