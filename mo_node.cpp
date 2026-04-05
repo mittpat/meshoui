@@ -5,12 +5,12 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 

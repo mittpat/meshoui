@@ -18,7 +18,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 
@@ -29,7 +29,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 
@@ -239,7 +239,7 @@ int main(int argc, char** argv)
             uni.camera = camera.position;
             moUploadBuffer(pipelineLayout->uniformBuffer[swapChain->frameIndex], sizeof(MoUniform), &uni);
         }
-        moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         {
             MoPushConstant pmv = {};
             pmv.model = identity;
@@ -247,7 +247,7 @@ int main(int argc, char** argv)
             vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
             moDrawMesh(currentCommandBuffer.buffer, sphereMesh);
         }
-        moBindPipeline(currentCommandBuffer.buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         {
             MoPushConstant pmv = {};
             pmv.model = identity;
