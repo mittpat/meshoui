@@ -14,9 +14,9 @@
 #include "mo_swapchain.h"
 
 #include <algorithm>
-#include <experimental/filesystem>
+#include <filesystem>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 
@@ -237,7 +237,7 @@ int main(int argc, char** argv)
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
         moBeginRenderPass(swapChain, currentCommandBuffer);
-        moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         moDrawMesh(currentCommandBuffer.buffer, cubeMesh);
 
         // ImGui

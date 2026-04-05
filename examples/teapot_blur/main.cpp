@@ -14,10 +14,10 @@
 
 #include <linalg.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <functional>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 
@@ -186,7 +186,7 @@ int main(int argc, char** argv)
             uni.camera = camera.position;
             moUploadBuffer(pipelineLayout->uniformBuffer[swapChain->frameIndex], sizeof(MoUniform), &uni);
         }
-        moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, domePipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         {
             MoPushConstant pmv = {};
             pmv.model = identity;
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
             vkCmdPushConstants(currentCommandBuffer.buffer, pipelineLayout->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MoPushConstant), &pmv);
             moDrawMesh(currentCommandBuffer.buffer, sphereMesh);
         }
-        moBindPipeline(currentCommandBuffer.buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, phongPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         moBindRenderbuffer(currentCommandBuffer.buffer, renderBuffer, pipelineLayout->pipelineLayout, swapChain->frameIndex);
         if (scene)
         {

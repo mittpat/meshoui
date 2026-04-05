@@ -119,11 +119,13 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         uint32_t backBufferCount = 0;
         err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, NULL);
         pCreateInfo->pCheckVkResultFn(err);
-        VkImage backBuffer[MO_FRAME_COUNT] = {};
+        if (backBufferCount > MO_SWAPCHAIN_IMAGE_COUNT) backBufferCount = MO_SWAPCHAIN_IMAGE_COUNT;
+        swapChain->imageCount = backBufferCount;
+        VkImage backBuffer[MO_SWAPCHAIN_IMAGE_COUNT] = {};
         err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, backBuffer);
         pCreateInfo->pCheckVkResultFn(err);
 
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount; ++i)
         {
             swapChain->images[i].back = backBuffer[i];
         }
@@ -315,11 +317,13 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         uint32_t backBufferCount = 0;
         err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, NULL);
         g_Device->pCheckVkResultFn(err);
-        VkImage backBuffer[MO_FRAME_COUNT] = {};
+        if (backBufferCount > MO_SWAPCHAIN_IMAGE_COUNT) backBufferCount = MO_SWAPCHAIN_IMAGE_COUNT;
+        swapChain->imageCount = backBufferCount;
+        VkImage backBuffer[MO_SWAPCHAIN_IMAGE_COUNT] = {};
         err = vkGetSwapchainImagesKHR(g_Device->device, swapChain->swapChainKHR, &backBufferCount, backBuffer);
         g_Device->pCheckVkResultFn(err);
 
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount; ++i)
         {
             swapChain->images[i].back = backBuffer[i];
         }
@@ -425,18 +429,21 @@ void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuf
     if (swapChain->swapChainKHR == VK_NULL_HANDLE) //offscreen
     {
         pImageAcquiredSemaphore = nullptr;
-        *pCurrentCommandBuffer = swapChain->frames[swapChain->frameIndex];
+        *pCurrentCommandBuffer = swapChain->frames[swapChain->currentFrame];
     }
     else
     {
+        // rotate frame
+        swapChain->currentFrame = (swapChain->currentFrame + 1) % MO_FRAME_COUNT;
+
         // previous
-        *pImageAcquiredSemaphore = swapChain->frames[swapChain->frameIndex].acquired;
+        *pImageAcquiredSemaphore = swapChain->frames[swapChain->currentFrame].acquired;
 
         err = vkAcquireNextImageKHR(g_Device->device, swapChain->swapChainKHR, UINT64_MAX, *pImageAcquiredSemaphore, VK_NULL_HANDLE, &swapChain->frameIndex);
         g_Device->pCheckVkResultFn(err);
 
         // current
-        *pCurrentCommandBuffer = swapChain->frames[swapChain->frameIndex];
+        *pCurrentCommandBuffer = swapChain->frames[swapChain->currentFrame];
 
         // wait indefinitely instead of periodically checking
         err = vkWaitForFences(g_Device->device, 1, &pCurrentCommandBuffer->fence, VK_TRUE, UINT64_MAX);
@@ -483,7 +490,7 @@ VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaph
 {
     VkResult err;
 
-    MoCommandBuffer currentCommandBuffer = swapChain->frames[swapChain->frameIndex];
+    MoCommandBuffer currentCommandBuffer = swapChain->frames[swapChain->currentFrame];
 
     vkCmdEndRenderPass(currentCommandBuffer.buffer);
 

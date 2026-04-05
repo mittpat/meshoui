@@ -11,10 +11,10 @@
 #include "mo_pipeline_utils.h"
 #include "mo_swapchain.h"
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <functional>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 using namespace linalg;
 using namespace linalg::aliases;
 
@@ -119,7 +119,7 @@ int main(int argc, char** argv)
         VkSemaphore imageAcquiredSemaphore;
         moBeginSwapChain(swapChain, &currentCommandBuffer, &imageAcquiredSemaphore);
         moBeginRenderPass(swapChain, currentCommandBuffer);
-        moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->frameIndex]);
+        moBindPipeline(currentCommandBuffer.buffer, passthroughPipeline, pipelineLayout->pipelineLayout, pipelineLayout->descriptorSet[swapChain->currentFrame]);
         moBindRenderbuffer(currentCommandBuffer.buffer, renderBuffer, pipelineLayout->pipelineLayout, swapChain->frameIndex);
 
         if (scene)

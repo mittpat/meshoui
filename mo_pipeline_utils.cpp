@@ -1,10 +1,10 @@
 #include "mo_pipeline_utils.h"
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <fstream>
 #include <vector>
 
-namespace std { namespace filesystem = experimental::filesystem; }
+using namespace std::filesystem;
 
 void moCreatePipeline(VkRenderPass renderPass, VkPipelineLayout pipelineLayout, const char* glslFilename, VkPipeline *pPipeline, MoPipelineCreateFlags flags)
 {
