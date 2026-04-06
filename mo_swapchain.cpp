@@ -433,9 +433,6 @@ void moBeginSwapChain(MoSwapChain swapChain, MoCommandBuffer *pCurrentCommandBuf
     }
     else
     {
-        // rotate frame
-        swapChain->currentFrame = (swapChain->currentFrame + 1) % MO_FRAME_COUNT;
-
         // previous
         *pImageAcquiredSemaphore = swapChain->frames[swapChain->currentFrame].acquired;
 
@@ -517,6 +514,7 @@ VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaph
 
         err = vkResetFences(g_Device->device, 1, &currentCommandBuffer.fence);
         g_Device->pCheckVkResultFn(err);
+        swapChain->currentFrame = (swapChain->currentFrame + 1) % MO_FRAME_COUNT;
     }
     else
     {
@@ -548,6 +546,7 @@ VkResult moEndSwapChain(MoSwapChain swapChain, VkSemaphore *pImageAcquiredSemaph
             info.pImageIndices = &swapChain->frameIndex;
             err = vkQueuePresentKHR(g_Device->queue, &info);
         }
+        swapChain->currentFrame = (swapChain->currentFrame + 1) % MO_FRAME_COUNT;
     }
 
     return err;
