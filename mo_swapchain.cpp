@@ -50,6 +50,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
     if (pCreateInfo->offscreen)
     {
         swapChain->extent = pCreateInfo->extent;
+        swapChain->imageCount = countof(swapChain->images);
         for (uint32_t i = 0; i < countof(swapChain->images); ++i)
         {
             {
@@ -190,7 +191,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         info.components.a = VK_COMPONENT_SWIZZLE_A;
         VkImageSubresourceRange image_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
         info.subresourceRange = image_range;
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount; ++i)
         {
             info.image = swapChain->images[i].back;
             err = vkCreateImageView(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].view);
@@ -211,7 +212,7 @@ void moCreateSwapChain(MoSwapChainCreateInfo *pCreateInfo, MoSwapChain *pSwapCha
         info.width = swapChain->extent.width;
         info.height = swapChain->extent.height;
         info.layers = 1;
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount; ++i)
         {
             attachment[0] = swapChain->images[i].view;
             err = vkCreateFramebuffer(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].front);
@@ -230,7 +231,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     g_Device->pCheckVkResultFn(err);
 
     moDeleteBuffer(swapChain->depthBuffer);
-    for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+    for (uint32_t i = 0; i < swapChain->imageCount; ++i)
     {
         vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
         vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
@@ -248,6 +249,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
     if (pCreateInfo->offscreen)
     {
         swapChain->extent = pCreateInfo->extent;
+        swapChain->imageCount = countof(swapChain->images);
         for (uint32_t i = 0; i < countof(swapChain->images); ++i)
         {
             {
@@ -392,7 +394,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         info.components.a = VK_COMPONENT_SWIZZLE_A;
         VkImageSubresourceRange image_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
         info.subresourceRange = image_range;
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount; ++i)
         {
             info.image = swapChain->images[i].back;
             err = vkCreateImageView(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].view);
@@ -413,7 +415,7 @@ void moRecreateSwapChain(MoSwapChainRecreateInfo *pCreateInfo, MoSwapChain swapC
         info.width = swapChain->extent.width;
         info.height = swapChain->extent.height;
         info.layers = 1;
-        for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+        for (uint32_t i = 0; i < swapChain->imageCount; ++i)
         {
             attachment[0] = swapChain->images[i].view;
             err = vkCreateFramebuffer(g_Device->device, &info, VK_NULL_HANDLE, &swapChain->images[i].front);
@@ -568,7 +570,7 @@ void moDestroySwapChain(MoSwapChain swapChain)
     }
 
     moDeleteBuffer(swapChain->depthBuffer);
-    for (uint32_t i = 0; i < countof(swapChain->images); ++i)
+    for (uint32_t i = 0; i < swapChain->imageCount; ++i)
     {
         vkDestroyImageView(g_Device->device, swapChain->images[i].view, VK_NULL_HANDLE);
         vkDestroyFramebuffer(g_Device->device, swapChain->images[i].front, VK_NULL_HANDLE);
