@@ -23,8 +23,8 @@ void moCreateInstance(MoInstanceCreateInfo *pCreateInfo, VkInstance *pInstance)
         create_info.ppEnabledExtensionNames = pCreateInfo->pExtensions;
         if (pCreateInfo->debugReport)
         {
-            // Enabling multiple validation layers grouped as LunarG standard validation
-            const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+            // Use modern Khronos validation layer (LUNARG_standard_validation is deprecated)
+            const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
             create_info.enabledLayerCount = 1;
             create_info.ppEnabledLayerNames = layers;
 
